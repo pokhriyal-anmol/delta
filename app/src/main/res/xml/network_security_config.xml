@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Deny cleartext everywhere. No plaintext HTTP can leave this app, ever. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- System CAs only. User-installed CAs are NOT trusted, which blocks
+                 casual MITM via a proxy cert on a compromised/managed device. -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Certificate pinning. If someone MITMs these hosts with a valid-but-wrong
+         cert, the connection fails instead of leaking.
+         PINS BELOW ARE PLACEHOLDERS - see SECURITY.md for how to generate real ones.
+         Pinning with wrong pins bricks the app when the cert rotates: read that first. -->
+    <domain-config>
+        <domain includeSubdomains="true">api.jolpi.ca</domain>
+        <domain includeSubdomains="true">api.multiviewer.app</domain>
+        <domain includeSubdomains="true">media.formula1.com</domain>
+        <!--
+        <pin-set expiration="2027-01-01">
+            <pin digest="SHA-256">REPLACE_ME_LEAF_PIN=</pin>
+            <pin digest="SHA-256">REPLACE_ME_BACKUP_PIN=</pin>
+        </pin-set>
+        -->
+    </domain-config>
+</network-security-config>

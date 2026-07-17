@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- feeds.db is a disposable cache. Never back it up; it refetches. -->
+<full-backup-content>
+    <exclude domain="database" path="feeds.db" />
+    <exclude domain="database" path="feeds.db-journal" />
+    <exclude domain="database" path="feeds.db-wal" />
+</full-backup-content>

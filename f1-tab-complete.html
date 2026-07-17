@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 tab — complete</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
+ background:#0A0A0C;min-height:100vh;display:flex;flex-direction:column;align-items:center;
+ padding:28px 16px;gap:16px;transition:background .25s;}
+body.lt{background:#DDDDD8;}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:760px;}
+.bar button{font:500 12px/1 inherit;padding:8px 13px;border-radius:999px;border:0;cursor:pointer;
+ background:#1E1E24;color:#C5C5C5;transition:.15s;}
+.bar button:hover{background:#2A2A32;}
+.bar button.on{background:#D71921;color:#fff;}
+body.lt .bar button{background:#fff;color:#555;}
+body.lt .bar button.on{background:#D71921;color:#fff;}
+.hint{font:400 11px/1.5 inherit;color:#6A6A70;text-align:center;max-width:560px;}
+body.lt .hint{color:#77776E;}
+
+#phone{width:390px;height:844px;border-radius:52px;overflow:hidden;position:relative;
+ border:0.5px solid #2A2A32;flex-shrink:0;}
+body.lt #phone{border-color:#C4C4BC;}
+#scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+#scroll::-webkit-scrollbar{display:none;}
+
+.cbD{background-color:#0B0B0D;background-image:
+ repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 1px,transparent 1px 3px),
+ repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),
+ repeating-linear-gradient(45deg,#23232B 0 3px,#14141A 3px 6px);}
+.cbL{background-color:#E9E9E5;background-image:
+ repeating-linear-gradient(135deg,rgba(0,0,0,.055) 0 1px,transparent 1px 3px),
+ repeating-linear-gradient(45deg,rgba(0,0,0,.028) 0 1px,transparent 1px 3px),
+ repeating-linear-gradient(45deg,#DBDBD5 0 3px,#EFEFEB 3px 6px);}
+.bignum{font-size:200px;font-weight:800;letter-spacing:-12px;line-height:1;
+ -webkit-background-clip:text;background-clip:text;color:transparent;position:relative;}
+.bigeng{position:absolute;left:0;right:0;top:4px;font-size:200px;font-weight:800;
+ letter-spacing:-12px;line-height:1;}
+.duo{width:100%;height:100%;object-fit:contain;object-position:bottom center;display:block;
+ image-rendering:auto;}
+.hero{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 62%,rgba(0,0,0,.72) 82%,rgba(0,0,0,.18) 94%,transparent 100%);
+ mask-image:linear-gradient(to bottom,#000 0%,#000 62%,rgba(0,0,0,.72) 82%,rgba(0,0,0,.18) 94%,transparent 100%);}
+.duowrap{position:relative;}
+.circ{border-radius:50%;overflow:hidden;}
+.tapc{cursor:pointer;transition:transform .12s;}
+.tapc:active{transform:scale(.975);}
+</style>
+</head>
+<body>
+
+<div class="bar" id="nav"></div>
+<div id="phone"><div id="scroll"></div></div>
+<div class="hint" id="hint"></div>
+
+<script>
+const ACC="#D71921";
+const T={
+ dark:{canvas:"#050506",card:"#131316",chip:"#1E1E23",nav:"#16161A",txt:"#FFF",sec:"#848484",
+  ter:"#A7A7A7",qua:"#C5C5C5",div:"#1E1E23",cb:"cbD",nStroke:"#43434F",eng:"rgba(255,255,255,.06)",
+  nGlow:"drop-shadow(0 0 16px rgba(210,210,230,.12)) drop-shadow(0 0 46px rgba(215,25,33,.22))",
+  sh:"0 8px 24px rgba(0,0,0,.8), inset 0 .5px 0 rgba(255,255,255,.06)",
+  shSm:"0 4px 14px rgba(0,0,0,.7), inset 0 .5px 0 rgba(255,255,255,.07)",
+  barBg:"rgba(24,24,29,.72)",
+  shBar:"0 12px 40px rgba(0,0,0,.85), 0 0 0 .5px rgba(255,255,255,.10), inset 0 .5px 0 rgba(255,255,255,.14)",
+  tBase:"#1C1C20",tMain:"#A7A7A7",t3d:"#2A2A33",gEnd:"rgba(5,5,6,0)",ga:.40,gb:.11},
+ light:{canvas:"#F5F5F3",card:"#FFF",chip:"#F0F0EE",nav:"#FFF",txt:"#0A0A0A",sec:"#848484",
+  ter:"#A7A7A7",qua:"#9A9A94",div:"#EDEDEA",cb:"cbL",nStroke:"#D2D2CB",eng:"rgba(0,0,0,.07)",
+  nGlow:"drop-shadow(0 0 20px rgba(215,25,33,.18)) drop-shadow(0 0 52px rgba(215,25,33,.10))",
+  sh:"0 8px 22px rgba(0,0,0,.07), 0 2px 6px rgba(0,0,0,.04)",
+  shSm:"0 3px 10px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04)",
+  barBg:"rgba(255,255,255,.74)",
+  shBar:"0 10px 34px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.06), 0 0 0 .5px rgba(0,0,0,.05)",
+  tBase:"#E6E6E3",tMain:"#3A3A3A",t3d:"#BEBEB6",gEnd:"rgba(245,245,243,0)",ga:.17,gb:.05}
+};
+
+const TEAM={McLaren:"F47600","Red Bull":"4781D7","Red Bull Racing":"4781D7",Audi:"F50537",
+ Alpine:"00A1E8","Alpine F1 Team":"00A1E8",Cadillac:"909090","Cadillac F1 Team":"909090",
+ Mercedes:"00D7B6","Aston Martin":"229971",Ferrari:"ED1131",Williams:"1868DB",
+ "Racing Bulls":"6C98FF","RB F1 Team":"6C98FF","Haas F1 Team":"9C9FA2",Haas:"9C9FA2"};
+
+/* Image source. Run headshot-source-test.html to find the biggest that loads,
+   then set IMGV. "raw" tries the untransformed DAM asset and falls back to 1col. */
+const IMGV="raw";
+const HOST="https://media.formula1.com/";
+const FB="d_driver_fallback_image.png/";
+const DAM="content/dam/fom-website/drivers/";
+function src(k){
+ if(IMGV==="raw") return HOST+DAM+k+".png";
+ return HOST+FB+DAM+k+".png.transform/"+IMGV+"/image.png";
+}
+function fallback(k){return HOST+FB+DAM+k+".png.transform/1col/image.png";}
+/* Driver photos run in original colour. Team identity is carried by the
+   surroundings — glow, number, surname, charts — not by tinting the person.
+   To put duotone back: add filter:url(#${fid(d.t)}) to the style below. */
+function heroImg(d,cls,extra){
+ return `<img class="duo ${cls}" src="${src(d.k)}" alt="${d.f} ${d.l}"
+  onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${fallback(d.k)}';}"
+  style="${extra||''}">`;
+}
+const B="https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/";
+const D=[
+ {p:1,n:12,f:"Kimi",l:"Antonelli",t:"Mercedes",pts:179,w:5,pod:8,pole:3,dnf:1,k:"K/ANDANT01_Kimi_Antonelli/andant01",img:B+"K/ANDANT01_Kimi_Antonelli/andant01.png.transform/1col/image.png"},
+ {p:2,n:63,f:"George",l:"Russell",t:"Mercedes",pts:154,w:2,pod:7,pole:2,dnf:0,k:"G/GEORUS01_George_Russell/georus01",img:B+"G/GEORUS01_George_Russell/georus01.png.transform/1col/image.png"},
+ {p:3,n:44,f:"Lewis",l:"Hamilton",t:"Ferrari",pts:147,w:1,pod:6,pole:1,dnf:1,k:"L/LEWHAM01_Lewis_Hamilton/lewham01",img:B+"L/LEWHAM01_Lewis_Hamilton/lewham01.png.transform/1col/image.png"},
+ {p:4,n:16,f:"Charles",l:"Leclerc",t:"Ferrari",pts:108,w:1,pod:4,pole:2,dnf:2,k:"C/CHALEC01_Charles_Leclerc/chalec01",img:B+"C/CHALEC01_Charles_Leclerc/chalec01.png.transform/1col/image.png"},
+ {p:5,n:1,f:"Lando",l:"Norris",t:"McLaren",pts:97,w:0,pod:3,pole:1,dnf:1,k:"L/LANNOR01_Lando_Norris/lannor01",img:B+"L/LANNOR01_Lando_Norris/lannor01.png.transform/1col/image.png"},
+ {p:6,n:81,f:"Oscar",l:"Piastri",t:"McLaren",pts:82,w:0,pod:2,pole:0,dnf:2,k:"O/OSCPIA01_Oscar_Piastri/oscpia01",img:B+"O/OSCPIA01_Oscar_Piastri/oscpia01.png.transform/1col/image.png"},
+ {p:7,n:3,f:"Max",l:"Verstappen",t:"Red Bull",pts:76,w:0,pod:2,pole:0,dnf:3,k:"M/MAXVER01_Max_Verstappen/maxver01",img:B+"M/MAXVER01_Max_Verstappen/maxver01.png.transform/1col/image.png"},
+ {p:8,n:6,f:"Isack",l:"Hadjar",t:"Red Bull",pts:52,w:0,pod:1,pole:0,dnf:2,k:"I/ISAHAD01_Isack_Hadjar/isahad01",img:B+"I/ISAHAD01_Isack_Hadjar/isahad01.png.transform/1col/image.png"},
+ {p:9,n:10,f:"Pierre",l:"Gasly",t:"Alpine",pts:42,w:0,pod:1,pole:0,dnf:1,k:"P/PIEGAS01_Pierre_Gasly/piegas01",img:B+"P/PIEGAS01_Pierre_Gasly/piegas01.png.transform/1col/image.png"},
+ {p:10,n:30,f:"Liam",l:"Lawson",t:"Racing Bulls",pts:39,w:0,pod:0,pole:0,dnf:1,k:"L/LIALAW01_Liam_Lawson/lialaw01",img:B+"L/LIALAW01_Liam_Lawson/lialaw01.png.transform/1col/image.png"},
+ {p:11,n:41,f:"Arvid",l:"Lindblad",t:"Racing Bulls",pts:20,w:0,pod:0,pole:0,dnf:2,k:"A/ARVLIN01_Arvid_Lindblad/arvlin01",img:B+"A/ARVLIN01_Arvid_Lindblad/arvlin01.png.transform/1col/image.png"},
+ {p:12,n:87,f:"Oliver",l:"Bearman",t:"Haas",pts:18,w:0,pod:0,pole:0,dnf:1,k:"O/OLIBEA01_Oliver_Bearman/olibea01",img:B+"O/OLIBEA01_Oliver_Bearman/olibea01.png.transform/1col/image.png"},
+ {p:13,n:43,f:"Franco",l:"Colapinto",t:"Alpine",pts:18,w:0,pod:0,pole:0,dnf:2,k:"F/FRACOL01_Franco_Colapinto/fracol01",img:B+"F/FRACOL01_Franco_Colapinto/fracol01.png.transform/1col/image.png"},
+ {p:14,n:5,f:"Gabriel",l:"Bortoleto",t:"Audi",pts:6,w:0,pod:0,pole:0,dnf:3,k:"G/GABBOR01_Gabriel_Bortoleto/gabbor01",img:B+"G/GABBOR01_Gabriel_Bortoleto/gabbor01.png.transform/1col/image.png"},
+ {p:15,n:55,f:"Carlos",l:"Sainz",t:"Williams",pts:6,w:0,pod:0,pole:0,dnf:2,k:"C/CARSAI01_Carlos_Sainz/carsai01",img:B+"C/CARSAI01_Carlos_Sainz/carsai01.png.transform/1col/image.png"},
+ {p:16,n:23,f:"Alexander",l:"Albon",t:"Williams",pts:5,w:0,pod:0,pole:0,dnf:1,k:"A/ALEALB01_Alexander_Albon/alealb01",img:B+"A/ALEALB01_Alexander_Albon/alealb01.png.transform/1col/image.png"},
+ {p:17,n:31,f:"Esteban",l:"Ocon",t:"Haas",pts:3,w:0,pod:0,pole:0,dnf:2,k:"E/ESTOCO01_Esteban_Ocon/estoco01",img:B+"E/ESTOCO01_Esteban_Ocon/estoco01.png.transform/1col/image.png"},
+ {p:18,n:14,f:"Fernando",l:"Alonso",t:"Aston Martin",pts:1,w:0,pod:0,pole:0,dnf:3,k:"F/FERALO01_Fernando_Alonso/feralo01",img:B+"F/FERALO01_Fernando_Alonso/feralo01.png.transform/1col/image.png"},
+ {p:19,n:27,f:"Nico",l:"Hülkenberg",t:"Audi",pts:0,w:0,pod:0,pole:0,dnf:2,k:"N/NICHUL01_Nico_Hulkenberg/nichul01",img:B+"N/NICHUL01_Nico_Hulkenberg/nichul01.png.transform/1col/image.png"},
+ {p:20,n:77,f:"Valtteri",l:"Bottas",t:"Cadillac",pts:0,w:0,pod:0,pole:0,dnf:4,k:"V/VALBOT01_Valtteri_Bottas/valbot01",img:B+"V/VALBOT01_Valtteri_Bottas/valbot01.png.transform/1col/image.png"},
+ {p:21,n:11,f:"Sergio",l:"Pérez",t:"Cadillac",pts:0,w:0,pod:0,pole:0,dnf:3,k:"S/SERPER01_Sergio_Perez/serper01",img:B+"S/SERPER01_Sergio_Perez/serper01.png.transform/1col/image.png"},
+ {p:22,n:18,f:"Lance",l:"Stroll",t:"Aston Martin",pts:0,w:0,pod:0,pole:0,dnf:4,k:"L/LANSTR01_Lance_Stroll/lanstr01",img:B+"L/LANSTR01_Lance_Stroll/lanstr01.png.transform/1col/image.png"}
+];
+const CON=[["Mercedes",333],["Ferrari",255],["McLaren",179],["Red Bull",128],["Alpine",60],
+ ["Racing Bulls",59],["Haas",21],["Williams",11],["Audi",6],["Aston Martin",1],["Cadillac",0]];
+
+const RACES=[
+ [1,"Australian","Melbourne","03-08",1],[2,"Chinese","Shanghai","03-15",1],[3,"Japanese","Suzuka","03-29",1],
+ [4,"Miami","Miami","05-03",1],[5,"Canadian","Montreal","05-24",1],[6,"Monaco","Monte Carlo","06-07",1],
+ [7,"Barcelona","Barcelona","06-14",1],[8,"Austrian","Spielberg","06-28",1],[9,"British","Silverstone","07-05",1],
+ [10,"Belgian","Spa","07-19",2],[11,"Hungarian","Budapest","07-26",0],[12,"Dutch","Zandvoort","08-23",0],
+ [13,"Italian","Monza","09-06",0],[14,"Spanish","Madrid","09-13",0],[15,"Azerbaijan","Baku","09-26",0],
+ [16,"Singapore","Marina Bay","10-11",0],[17,"United States","Austin","10-25",0],[18,"Mexico City","Mexico City","11-01",0],
+ [19,"Brazilian","São Paulo","11-08",0],[20,"Las Vegas","Las Vegas","11-22",0],[21,"Qatar","Lusail","11-29",0],
+ [22,"Abu Dhabi","Yas Marina","12-06",0]];
+
+const BRIT=[[1,12,"Antonelli","Mercedes","1:22:14.301",25],[2,44,"Hamilton","Ferrari","+3.412",18],
+ [3,63,"Russell","Mercedes","+9.887",15],[4,16,"Leclerc","Ferrari","+14.220",12],
+ [5,1,"Norris","McLaren","+22.109",10],[6,81,"Piastri","McLaren","+28.774",8],
+ [7,3,"Verstappen","Red Bull","+34.001",6],[8,6,"Hadjar","Red Bull","+41.556",4],
+ [9,30,"Lawson","Racing Bulls","+52.330",2],[10,10,"Gasly","Alpine","+58.912",1],
+ [11,41,"Lindblad","Racing Bulls","+64.220",0],[12,87,"Bearman","Haas","+70.118",0],
+ [13,43,"Colapinto","Alpine","+74.900",0],[14,55,"Sainz","Williams","+81.442",0],
+ [15,23,"Albon","Williams","+88.771",0],[16,5,"Bortoleto","Audi","+92.334",0],
+ [17,31,"Ocon","Haas","+1 LAP",0],[18,14,"Alonso","Aston Martin","+1 LAP",0],
+ [19,77,"Bottas","Cadillac","+1 LAP",0],["DNF",11,"Pérez","Cadillac","Collision",0],
+ ["DNF",27,"Hülkenberg","Audi","Power unit",0],["DNF",18,"Stroll","Aston Martin","Gearbox",0]];
+
+let mode="dark", screen="home", curDriver=0;
+const S=()=>T[mode];
+const tc=t=>"#"+(TEAM[t]||"888888");
+const el=id=>document.getElementById(id);
+const fid=t=>"duo"+t.replace(/[^a-zA-Z]/g,"");
+
+function duoDefs(){
+ const seen=new Set();let f="";
+ D.forEach(d=>{if(seen.has(d.t))return;seen.add(d.t);
+  const c=tc(d.t).slice(1);
+  const r=parseInt(c.slice(0,2),16)/255,g=parseInt(c.slice(2,4),16)/255,b=parseInt(c.slice(4,6),16)/255;
+  const dk=[r*.11+.01,g*.11+.01,b*.11+.02];
+  const lt=[r+(1-r)*.58,g+(1-g)*.58,b+(1-b)*.58];
+  f+=`<filter id="${fid(d.t)}" color-interpolation-filters="sRGB">
+  <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0"/>
+  <feComponentTransfer>
+  <feFuncR type="table" tableValues="${dk[0].toFixed(3)} ${lt[0].toFixed(3)}"/>
+  <feFuncG type="table" tableValues="${dk[1].toFixed(3)} ${lt[1].toFixed(3)}"/>
+  <feFuncB type="table" tableValues="${dk[2].toFixed(3)} ${lt[2].toFixed(3)}"/>
+  </feComponentTransfer></filter>`;});
+ return `<svg width="0" height="0" style="position:absolute;pointer-events:none;"><defs>${f}</defs></svg>`;
+}
+
+/* Real Spa-Francorchamps geometry — MultiViewer api/v1/circuits/7, 1005 points,
+   rotated 91deg and normalised to a 200x200 box. Same source OpenF1 credits. */
+const SPA_D="M42.7,78.0 L40.0,76.2 L36.8,74.0 L33.3,71.6 L30.0,69.3 L26.5,66.9 L23.3,64.7 L20.6,62.9 L18.8,61.9 L17.4,61.4 L16.2,61.5 L15.2,62.2 L15.0,63.3 L15.3,64.6 L15.8,65.9 L16.6,67.6 L17.6,69.6 L18.9,72.3 L20.4,75.4 L22.3,78.7 L24.7,82.1 L27.2,85.3 L30.2,88.5 L33.2,91.5 L36.4,94.6 L39.7,97.8 L43.2,101.0 L46.6,104.3 L49.3,108.7 L52.4,112.6 L57.1,114.6 L61.8,115.6 L66.2,117.9 L70.0,120.6 L73.7,123.5 L77.5,126.4 L81.7,129.2 L86.0,131.6 L90.9,133.6 L95.6,135.2 L100.7,137.1 L105.3,138.7 L110.0,140.3 L114.7,142.0 L119.5,143.7 L124.4,145.4 L129.5,147.3 L134.5,149.0 L139.6,150.8 L143.6,152.3 L146.5,153.0 L148.9,152.9 L151.1,151.7 L153.1,149.8 L155.2,148.9 L157.8,149.0 L160.4,149.9 L163.4,151.0 L166.2,151.0 L168.9,149.8 L171.1,147.6 L173.0,144.8 L175.2,141.9 L177.9,138.4 L180.4,135.2 L183.0,131.8 L184.5,129.2 L185.0,127.1 L184.4,125.2 L183.1,123.9 L181.4,123.4 L179.6,123.6 L177.8,124.7 L176.1,126.7 L174.5,129.2 L172.9,132.0 L170.8,134.1 L168.2,135.1 L165.1,134.6 L162.6,133.7 L159.6,132.3 L156.2,130.9 L152.4,129.6 L148.0,128.5 L143.8,127.5 L139.1,126.4 L134.3,125.3 L130.1,124.0 L126.8,121.6 L124.8,118.5 L124.3,114.2 L124.5,109.7 L126.3,105.6 L129.9,101.9 L133.8,99.6 L138.5,98.0 L143.0,96.7 L147.4,95.4 L151.8,94.0 L155.8,92.8 L158.7,91.4 L160.9,89.3 L161.9,87.0 L161.8,84.1 L160.4,81.3 L159.6,78.6 L160.1,75.8 L161.6,73.3 L164.1,71.2 L167.1,69.6 L170.7,67.9 L174.2,66.2 L176.8,64.5 L178.2,62.7 L178.8,60.7 L178.2,58.3 L176.8,55.5 L175.0,52.8 L172.9,50.2 L169.9,48.0 L165.9,46.9 L161.8,47.3 L157.6,48.7 L153.7,50.6 L150.1,53.1 L146.6,56.0 L143.4,59.0 L140.4,62.3 L137.5,66.4 L135.0,70.5 L132.3,74.9 L129.8,79.1 L126.6,83.1 L123.0,86.2 L118.7,88.6 L114.3,90.5 L109.5,92.3 L104.5,93.6 L99.3,93.3 L94.2,91.5 L89.7,89.5 L85.4,87.5 L81.1,85.7 L76.7,84.3 L72.3,83.3 L68.7,82.6 L65.7,82.1 L63.7,81.7 L62.2,81.6 L61.1,81.5 L60.2,81.5 L59.5,81.6 L58.9,81.8 L58.3,82.1 L57.8,82.7 L57.6,83.5 L57.6,84.4 L57.3,85.3 L56.8,85.9 L56.2,86.2 L55.4,86.2 L54.5,85.9 L53.5,85.5 L52.2,84.7 L50.5,83.5 L48.4,81.9 L45.9,80.2 L43.4,78.5 L42.7,78.0 Z";
+/* Eau Rouge / Raidillon — the climb out of turn 1 up to Kemmel */
+const SPA_ER="M15.0,63.3 L15.3,64.6 L15.8,65.9 L16.6,67.6 L17.6,69.6 L18.9,72.3 L20.4,75.4 L22.3,78.7 L24.7,82.1 L27.2,85.3 L30.2,88.5 L33.2,91.5 L36.4,94.6 L39.7,97.8 L43.2,101.0 L46.6,104.3";
+
+/* Fake 3D by extruding: redraw the path down the y axis, dark to light,
+   then lay the running surface on top. Depth ~9 reads solid without mush. */
+function circuit3d(depth){
+ const p=S();let s="";
+ for(let i=depth;i>=1;i--){
+  const t=i/depth;
+  s+=`<path d="${SPA_D}" fill="none" stroke="${p.t3d}" stroke-opacity="${(0.30+0.70*(1-t)).toFixed(2)}"
+   stroke-width="10" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,${i*1.15})"/>`;
+ }
+ s+=`<path d="${SPA_D}" fill="none" stroke="${p.tBase}" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+ s+=`<path d="${SPA_D}" fill="none" stroke="${p.tMain}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+ s+=`<path d="${SPA_ER}" fill="none" stroke="${ACC}" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+ s+=`<circle cx="42.7" cy="78" r="4" fill="${p.txt}"/>`;
+ return s;
+}
+const spa=()=>circuit3d(9);
+
+function status(){const p=S();return `<div style="display:flex;justify-content:space-between;padding:14px 28px 2px;font-size:13px;font-weight:600;color:${p.txt};position:relative;z-index:5;">
+<span>9:41</span><span><i class="ti ti-antenna-bars-5"></i> <i class="ti ti-wifi"></i> <i class="ti ti-battery-3"></i></span></div>`;}
+
+function back(to){const p=S();return `<div style="padding:14px 20px 0;position:relative;z-index:5;">
+<div class="tapc" onclick="go('${to}')" style="width:40px;height:40px;border-radius:50%;background:${p.nav};box-shadow:${p.shSm};display:flex;align-items:center;justify-content:center;">
+<i class="ti ti-chevron-left" style="font-size:21px;color:${p.txt};"></i></div></div>`;}
+
+function glow(top,right,size,a){const p=S();return `<div style="position:absolute;top:${top}px;right:${right}px;width:${size}px;height:${size}px;border-radius:50%;background:radial-gradient(circle, rgba(215,25,33,${a}) 0%, rgba(215,25,33,${a*0.3}) 44%, ${p.gEnd} 70%);pointer-events:none;"></div>`;}
+
+function tabbar(){const p=S();
+ const it=(i,l,on,t)=>`<div class="tapc" role="button" aria-label="${l}" title="${l}"
+  onclick="${t?`go('${t}')`:''}" style="flex:1;display:flex;align-items:center;justify-content:center;">
+ <i class="ti ti-${i}" style="font-size:27px;color:${on?ACC:p.sec};"></i></div>`;
+return `<div style="position:sticky;bottom:0;z-index:30;padding:0 20px 30px;pointer-events:none;">
+<div style="background:${p.barBg};backdrop-filter:blur(26px) saturate(1.6);-webkit-backdrop-filter:blur(26px) saturate(1.6);
+ border-radius:999px;padding:15px 10px;display:flex;box-shadow:${p.shBar};pointer-events:auto;">
+${it("circle-check","Tasks",0)}${it("crosshair","Valorant",0)}${it("steering-wheel","F1",1,"home")}</div></div>`;}
+
+/* ---------- HOME ---------- */
+function home(){const p=S();
+ const cd=(n,l)=>`<div><div style="font-size:40px;font-weight:800;color:${p.txt};letter-spacing:-1.8px;line-height:1;">${n}</div>
+ <div style="font-size:9px;color:${p.sec};margin-top:5px;letter-spacing:.6px;">${l}</div></div>`;
+ let h=`<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:absolute;top:320px;left:-140px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle, rgba(215,25,33,${p.gb}) 0%, ${p.gEnd} 70%);"></div>
+ <div style="position:relative;">${status()}
+ <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px 0;">
+ <span style="font-size:15px;font-weight:500;color:${p.sec};">Formula 1</span>
+ <div class="tapc" onclick="go('cal')" style="display:inline-flex;align-items:center;gap:5px;background:${p.nav};border-radius:999px;padding:7px 13px;box-shadow:${p.shSm};">
+ <span style="font-size:12px;font-weight:500;color:${p.txt};">2026</span>
+ <i class="ti ti-chevron-down" style="font-size:13px;color:${p.sec};"></i></div></div>
+
+ <div class="tapc" onclick="go('weekend')" style="padding:20px 22px 0;position:relative;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">Round 10 · Next up</div>
+ <div style="font-size:40px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;width:62%;">Belgian<br>Grand Prix</div>
+ <div style="font-size:16px;font-weight:500;color:${ACC};letter-spacing:-.3px;margin-top:8px;">Spa-Francorchamps</div></div>
+
+ <div style="position:absolute;right:-44px;top:120px;width:230px;height:230px;pointer-events:none;">
+ <svg viewBox="0 0 210 210" style="width:100%;height:100%;">${spa()}</svg></div>
+
+ <div style="padding:28px 22px 0;position:relative;display:flex;gap:30px;">${cd("02","DAYS")}${cd("14","HOURS")}${cd("22","MINS")}</div>
+ <div style="padding:15px 22px 0;display:flex;align-items:center;gap:7px;">
+ <i class="ti ti-bell" style="font-size:14px;color:${ACC};"></i>
+ <span style="font-size:11px;color:${p.sec};">Lights out Sunday 15:00 · reminder on</span></div>
+
+ <div style="padding:30px 22px 0;display:flex;justify-content:space-between;align-items:baseline;">
+ <span style="font-size:23px;font-weight:800;color:${p.txt};letter-spacing:-.7px;">Drivers</span>
+ <span class="tapc" onclick="go('standings')" style="font-size:12px;font-weight:500;color:${ACC};">View all</span></div>
+ <div style="margin:14px 20px 0;background:${p.card};border-radius:28px;padding:4px 18px;box-shadow:${p.sh};">`;
+ D.slice(0,5).forEach((d,i)=>{h+=`<div class="tapc" onclick="openDriver(${i})" style="display:flex;align-items:center;gap:11px;padding:12px 0;${i<4?`border-bottom:.5px solid ${p.div};`:''}">
+ <span style="font-size:12px;color:${p.sec};width:13px;">${d.p}</span>
+ <div style="width:4px;height:24px;background:${tc(d.t)};border-radius:2px;"></div>
+ <div style="flex:1;"><div style="font-size:15px;font-weight:500;color:${p.txt};line-height:1.1;">${d.l}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:2px;">${d.t}</div></div>
+ ${d.w?`<span style="font-size:10px;color:${p.sec};margin-right:9px;">${d.w}W</span>`:''}
+ <span style="font-size:16px;font-weight:700;color:${p.txt};">${d.pts}</span></div>`;});
+ h+=`</div>
+ <div style="padding:26px 22px 0;"><span style="font-size:23px;font-weight:800;color:${p.txt};letter-spacing:-.7px;">Constructors</span></div>
+ <div style="margin:14px 20px 0;display:flex;gap:9px;">`;
+ CON.slice(0,3).forEach(c=>{h+=`<div class="tapc" onclick="openCon('${c[0]}')" style="flex:1;background:${p.card};border-radius:22px;padding:14px 12px;box-shadow:${p.sh};">
+ <div style="width:22px;height:4px;background:${tc(c[0])};border-radius:2px;"></div>
+ <div style="font-size:21px;font-weight:800;color:${p.txt};margin-top:9px;line-height:1;">${c[1]}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:4px;">${c[0]}</div></div>`;});
+ h+=`</div>
+ <div class="tapc" onclick="go('result')" style="margin:26px 20px 0;background:${p.card};border-radius:24px;padding:15px 18px;box-shadow:${p.sh};display:flex;align-items:center;gap:13px;">
+ <div style="width:42px;height:42px;border-radius:50%;background:${p.chip};display:flex;align-items:center;justify-content:center;">
+ <i class="ti ti-flag-checkered" style="font-size:19px;color:${p.qua};"></i></div>
+ <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:${p.txt};">British GP · Round 9</div>
+ <div style="font-size:11px;color:${p.sec};margin-top:2px;">Antonelli wins · 5 Jul</div></div>
+ <i class="ti ti-chevron-right" style="font-size:18px;color:${p.sec};"></i></div>
+ <div style="height:30px;"></div>${tabbar()}</div></div>`;
+ return h;}
+
+/* ---------- WEEKEND ---------- */
+function weekend(){const p=S();
+ const st=(ic,v,u,l)=>`<div style="display:flex;align-items:center;gap:11px;">
+ <i class="ti ti-${ic}" style="font-size:19px;color:${p.sec};width:20px;"></i>
+ <div><div style="font-size:19px;font-weight:700;color:${p.txt};line-height:1;">${v}${u?`<span style="font-size:11px;font-weight:500;color:${p.sec};margin-left:3px;">${u}</span>`:''}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:4px;">${l}</div></div></div>`;
+ const ss=(d,dy,nm,tm,ic,icc,act)=>`<div style="display:flex;align-items:center;gap:15px;background:${act?(mode==="dark"?"#1A1216":"#FFF4F4"):p.card};border-radius:28px;padding:15px 18px;box-shadow:${act?"0 10px 28px rgba(215,25,33,.18), 0 2px 8px rgba(0,0,0,.05)":p.sh};">
+ <div style="width:46px;height:46px;border-radius:50%;background:${act?ACC:p.chip};display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">
+ <div style="font-size:16px;font-weight:700;color:${act?"#fff":p.txt};line-height:1;">${d}</div>
+ <div style="font-size:8px;color:${act?"rgba(255,255,255,.85)":p.sec};margin-top:1px;">${dy}</div></div>
+ <div style="flex:1;"><div style="font-size:15px;font-weight:500;color:${p.txt};">${nm}</div>
+ <div style="font-size:11px;color:${act?ACC:p.sec};margin-top:2px;">${tm}</div></div>
+ <i class="ti ti-${ic}" style="font-size:20px;color:${icc};"></i></div>`;
+ return `<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:relative;">${status()}${back('home')}
+ <div style="padding:20px 22px 0;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">Round 10</div>
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;">Belgian<br>Grand Prix</div>
+ <div style="font-size:17px;font-weight:500;color:${ACC};letter-spacing:-.3px;margin-top:8px;">Circuit de Spa-Francorchamps</div>
+ <div style="font-size:12px;color:${p.sec};margin-top:9px;">17 – 19 July · Belgium</div></div>
+ <div style="position:relative;margin-top:30px;min-height:270px;">
+ <div style="position:absolute;right:-38px;top:8px;width:250px;height:250px;">
+ <svg viewBox="0 0 210 210" style="width:100%;height:100%;">${spa()}
+ <text x="2" y="66" fill="${ACC}" font-size="7.5" font-weight="600">EAU ROUGE</text>
+ <text x="170" y="140" fill="${p.sec}" font-size="7.5" font-weight="600">KEMMEL</text></svg></div>
+ <div style="position:relative;padding:0 22px;width:56%;">
+ <div style="display:flex;align-items:baseline;gap:6px;">
+ <span style="font-size:50px;font-weight:800;color:${p.txt};letter-spacing:-2px;line-height:1;">7.004</span>
+ <span style="font-size:15px;font-weight:500;color:${p.sec};">KM</span></div>
+ <div style="font-size:11px;color:${p.sec};margin-top:5px;">Circuit length</div>
+ <div style="margin-top:26px;display:flex;flex-direction:column;gap:20px;">
+ ${st("rotate-clockwise","44","","No. of Laps")}${st("steering-wheel","19","","Turns")}
+ ${st("gauge","359.7","KM/H","Top Speed")}${st("mountain","102.2","M","Elevation")}</div></div>
+ <div style="position:absolute;right:22px;bottom:0;">
+ <div class="tapc" style="display:inline-flex;align-items:center;gap:7px;background:${p.nav};border-radius:999px;padding:11px 18px;box-shadow:${p.shSm};">
+ <i class="ti ti-chart-bar" style="font-size:15px;color:${ACC};"></i>
+ <span style="font-size:13px;font-weight:500;color:${p.txt};">Circuit Stats</span></div></div></div>
+ <div style="padding:34px 22px 0;"><div style="font-size:23px;font-weight:800;color:${p.txt};letter-spacing:-.7px;">Race Weekend</div></div>
+ <div style="padding:16px 20px 0;display:flex;flex-direction:column;gap:11px;">
+ ${ss("17","FRI","Practice 1","12:30 – 13:30","cloud",p.ter,0)}
+ ${ss("17","FRI","Practice 2","16:00 – 17:00","cloud",p.ter,0)}
+ ${ss("18","SAT","Practice 3","11:30 – 12:30","sun",p.qua,0)}
+ ${ss("18","SAT","Qualifying","15:00 – 16:00","cloud-rain",p.qua,0)}
+ ${ss("19","SUN","Race","15:00 · in 2d 14h","bell",ACC,1)}</div>
+ <div style="height:30px;"></div>${tabbar()}</div></div>`;}
+
+/* ---------- RESULT ---------- */
+function result(){const p=S();
+ let h=`<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:relative;">${status()}${back('home')}
+ <div style="padding:20px 22px 0;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">Round 9 · Result</div>
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;">British<br>Grand Prix</div>
+ <div style="font-size:17px;font-weight:500;color:${ACC};letter-spacing:-.3px;margin-top:8px;">Silverstone Circuit</div>
+ <div style="font-size:12px;color:${p.sec};margin-top:9px;">5 July · 52 laps</div></div>
+ <div style="display:flex;gap:9px;padding:26px 20px 0;">`;
+ [["1st","Antonelli","Mercedes",1],["2nd","Hamilton","Ferrari",0],["3rd","Russell","Mercedes",0]].forEach(w=>{
+  h+=`<div style="flex:1;background:${p.card};border-radius:22px;padding:14px 12px;box-shadow:${p.sh};">
+  <div style="width:22px;height:4px;background:${tc(w[2])};border-radius:2px;"></div>
+  <div style="font-size:11px;color:${w[3]?ACC:p.sec};margin-top:9px;font-weight:600;">${w[0]}</div>
+  <div style="font-size:14px;font-weight:700;color:${p.txt};margin-top:3px;line-height:1.1;">${w[1]}</div></div>`;});
+ h+=`</div>
+ <div style="padding:28px 22px 0;"><span style="font-size:23px;font-weight:800;color:${p.txt};letter-spacing:-.7px;">Classification</span></div>
+ <div style="margin:14px 20px 0;background:${p.card};border-radius:28px;padding:6px 16px;box-shadow:${p.sh};">
+ <div style="display:flex;font-size:9px;color:${p.sec};padding:8px 0 7px;border-bottom:.5px solid ${p.div};letter-spacing:.4px;">
+ <span style="width:26px;">POS</span><span style="flex:1;">DRIVER</span><span style="width:74px;text-align:right;">TIME</span><span style="width:26px;text-align:right;">PTS</span></div>`;
+ BRIT.forEach((r,i)=>{const dnf=r[0]==="DNF";
+  h+=`<div style="display:flex;align-items:center;font-size:12px;padding:7px 0;${i<BRIT.length-1?`border-bottom:.5px solid ${p.div};`:''}">
+  <span style="width:26px;font-weight:700;color:${dnf?p.sec:p.txt};font-size:${dnf?9:12}px;">${r[0]}</span>
+  <div style="width:3px;height:16px;background:${tc(r[3])};border-radius:2px;margin-right:9px;"></div>
+  <span style="flex:1;color:${dnf?p.sec:p.txt};font-weight:500;">${r[2]}</span>
+  <span style="width:74px;text-align:right;color:${dnf?p.sec:p.qua};font-size:11px;">${r[4]}</span>
+  <span style="width:26px;text-align:right;font-weight:700;color:${r[5]?p.txt:p.sec};">${r[5]||"–"}</span></div>`;});
+ h+=`</div><div style="height:30px;"></div>${tabbar()}</div></div>`;
+ return h;}
+
+/* ---------- STANDINGS ---------- */
+let stMode="d";
+function standings(){const p=S();
+ let h=`<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:relative;">${status()}${back('home')}
+ <div style="padding:20px 22px 0;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">2026 · after Round 9</div>
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;">Standings</div></div>
+ <div style="display:flex;gap:8px;padding:22px 22px 0;">
+ <div class="tapc" onclick="setSt('d')" style="background:${stMode==='d'?ACC:p.nav};border-radius:999px;padding:9px 17px;box-shadow:${p.shSm};">
+ <span style="font-size:13px;font-weight:500;color:${stMode==='d'?'#fff':p.txt};">Drivers</span></div>
+ <div class="tapc" onclick="setSt('c')" style="background:${stMode==='c'?ACC:p.nav};border-radius:999px;padding:9px 17px;box-shadow:${p.shSm};">
+ <span style="font-size:13px;font-weight:500;color:${stMode==='c'?'#fff':p.txt};">Constructors</span></div></div>
+ <div style="margin:20px 20px 0;background:${p.card};border-radius:28px;padding:4px 18px;box-shadow:${p.sh};">`;
+ if(stMode==='d'){D.forEach((d,i)=>{h+=`<div class="tapc" onclick="openDriver(${i})" style="display:flex;align-items:center;gap:11px;padding:11px 0;${i<D.length-1?`border-bottom:.5px solid ${p.div};`:''}">
+  <span style="font-size:12px;color:${p.sec};width:15px;">${d.p}</span>
+  <div style="width:4px;height:22px;background:${tc(d.t)};border-radius:2px;"></div>
+  <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:${p.txt};line-height:1.1;">${d.l}</div>
+  <div style="font-size:10px;color:${p.sec};margin-top:2px;">${d.t}</div></div>
+  ${d.w?`<span style="font-size:10px;color:${p.sec};margin-right:9px;">${d.w}W</span>`:''}
+  <span style="font-size:15px;font-weight:700;color:${d.pts?p.txt:p.sec};">${d.pts}</span></div>`;});}
+ else{CON.forEach((c,i)=>{h+=`<div class="tapc" onclick="openCon('${c[0]}')" style="display:flex;align-items:center;gap:11px;padding:13px 0;${i<CON.length-1?`border-bottom:.5px solid ${p.div};`:''}">
+  <span style="font-size:12px;color:${p.sec};width:15px;">${i+1}</span>
+  <div style="width:4px;height:22px;background:${tc(c[0])};border-radius:2px;"></div>
+  <div style="flex:1;"><div style="font-size:15px;font-weight:500;color:${p.txt};">${c[0]}</div></div>
+  <span style="font-size:16px;font-weight:700;color:${c[1]?p.txt:p.sec};">${c[1]}</span></div>`;});}
+ h+=`</div><div style="height:30px;"></div>${tabbar()}</div></div>`;
+ return h;}
+function setSt(m){stMode=m;render();}
+
+/* ---------- CALENDAR ---------- */
+function cal(){const p=S();
+ let h=`<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:relative;">${status()}${back('home')}
+ <div style="padding:20px 22px 0;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">22 rounds</div>
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;">2026<br>Calendar</div></div>
+ <div style="padding:26px 20px 0;display:flex;flex-direction:column;gap:9px;">`;
+ RACES.forEach(r=>{const nx=r[4]===2, done=r[4]===1;
+  h+=`<div class="tapc" onclick="go('${nx?'weekend':done?'result':'weekend'}')" style="display:flex;align-items:center;gap:14px;background:${nx?(mode==="dark"?"#1A1216":"#FFF4F4"):p.card};border-radius:24px;padding:13px 16px;box-shadow:${nx?"0 10px 28px rgba(215,25,33,.18), 0 2px 8px rgba(0,0,0,.05)":p.sh};${done?'opacity:.55;':''}">
+  <div style="width:38px;height:38px;border-radius:50%;background:${nx?ACC:p.chip};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+  <span style="font-size:13px;font-weight:700;color:${nx?'#fff':p.txt};">${r[0]}</span></div>
+  <div style="flex:1;"><div style="font-size:14px;font-weight:500;color:${p.txt};">${r[1]}</div>
+  <div style="font-size:10px;color:${nx?ACC:p.sec};margin-top:2px;">${r[2]}</div></div>
+  <span style="font-size:11px;color:${p.sec};">${r[3]}</span>
+  ${done?`<i class="ti ti-check" style="font-size:15px;color:${p.sec};margin-left:8px;"></i>`:nx?`<i class="ti ti-bell" style="font-size:15px;color:${ACC};margin-left:8px;"></i>`:`<span style="width:23px;"></span>`}</div>`;});
+ h+=`</div><div style="height:30px;"></div>${tabbar()}</div></div>`;
+ return h;}
+
+/* ---------- DRIVER ---------- */
+function openDriver(i){curDriver=i;go('driver');}
+function driver(){const p=S();const d=D[curDriver];const col=tc(d.t);
+ const sc=(v,l)=>`<div style="flex:1;text-align:center;">
+ <div style="font-size:23px;font-weight:800;color:${p.txt};line-height:1;">${String(v).padStart(2,"0")}</div>
+ <div style="font-size:9px;color:${p.sec};margin-top:5px;letter-spacing:.4px;">${l}</div></div>`;
+ const bars=[7,10,4,8,10,3,9,10,6].map(v=>`<div style="flex:1;height:${v*10}%;background:${col};border-radius:3px 3px 0 0;opacity:${(0.4+v*0.06).toFixed(2)};"></div>`).join("");
+ return `<div style="position:relative;min-height:844px;"><div style="position:relative;">${status()}${back('standings')}
+ <div style="position:relative;height:430px;margin-top:-6px;">
+ <div style="position:absolute;left:50%;transform:translateX(-50%);top:36px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle, ${col}66 0%, ${p.gEnd} 68%);"></div>
+ <div style="position:absolute;left:0;right:0;top:20px;text-align:center;">
+ <div class="bigeng" style="color:${p.eng};">${d.n}</div>
+ <div class="bignum ${p.cb}" style="-webkit-text-stroke:3px ${p.nStroke};filter:drop-shadow(0 0 16px rgba(210,210,230,.12)) drop-shadow(0 0 46px ${col}55);">${d.n}</div></div>
+ <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:44px;width:310px;height:352px;">
+ ${heroImg(d,"hero")}</div>
+ <div style="position:absolute;left:14px;top:150px;text-align:center;width:66px;">
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.8px;line-height:1;">${String(d.p).padStart(2,"0")}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:6px;letter-spacing:.6px;">POS</div></div>
+ <div style="position:absolute;right:14px;top:150px;text-align:center;width:66px;">
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.8px;line-height:1;">${d.pts}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:6px;letter-spacing:.6px;">PTS</div></div>
+ <div style="position:absolute;left:0;right:0;bottom:2px;text-align:center;">
+ <div style="font-size:11px;color:${p.sec};letter-spacing:.4px;">2026 SEASON · ${d.t.toUpperCase()}</div>
+ <div style="font-size:38px;font-weight:800;color:${p.txt};letter-spacing:-1.5px;line-height:1.04;margin-top:5px;">${d.f}</div>
+ <div style="font-size:38px;font-weight:800;color:${col};letter-spacing:-1.5px;line-height:1.04;">${d.l}</div></div></div>
+ <div style="margin:22px 20px 0;background:${p.card};border-radius:26px;padding:17px 10px;box-shadow:${p.sh};display:flex;">
+ ${sc(d.w,"WINS")}${sc(d.pod,"PODIUMS")}${sc(d.pole,"POLES")}${sc(d.dnf,"DNFs")}</div>
+ <div style="padding:24px 22px 0;display:flex;justify-content:space-between;align-items:baseline;">
+ <span style="font-size:21px;font-weight:800;color:${p.txt};letter-spacing:-.6px;">Results</span>
+ <div class="tapc" onclick="go('h2h')" style="display:inline-flex;align-items:center;gap:6px;background:${p.nav};border-radius:999px;padding:8px 14px;box-shadow:${p.shSm};">
+ <i class="ti ti-swords" style="font-size:14px;color:${ACC};"></i>
+ <span style="font-size:12px;font-weight:500;color:${p.txt};">Head to head</span></div></div>
+ <div style="margin:14px 20px 0;background:${p.card};border-radius:26px;padding:17px 18px 15px;box-shadow:${p.sh};">
+ <div style="display:flex;align-items:flex-end;gap:5px;height:64px;">${bars}</div>
+ <div style="display:flex;justify-content:space-between;margin-top:9px;">
+ <span style="font-size:10px;color:${p.sec};">R1</span>
+ <span style="font-size:10px;color:${p.sec};">Points per round</span>
+ <span style="font-size:10px;color:${p.sec};">R9</span></div></div>
+ <div style="height:30px;"></div>${tabbar()}</div></div>`;}
+
+/* ---------- H2H ---------- */
+function h2h(){const p=S();const a=D[0],b=D[1];const ca=tc(a.t),cb=tc(b.t);
+ const row=(l,va,vb)=>{const t=va+vb||1;const pa=Math.round(va/t*100);
+  return `<div style="padding:13px 0;border-bottom:.5px solid ${p.div};">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+  <span style="font-size:17px;font-weight:700;color:${va>=vb?p.txt:p.sec};">${va}</span>
+  <span style="font-size:10px;color:${p.sec};letter-spacing:.4px;">${l}</span>
+  <span style="font-size:17px;font-weight:700;color:${vb>=va?p.txt:p.sec};">${vb}</span></div>
+  <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:${p.chip};">
+  <div style="width:${pa}%;background:${ca};"></div><div style="flex:1;background:${cb};opacity:.75;"></div></div></div>`;};
+ return `<div style="position:relative;min-height:844px;">${glow(-90,-110,380,p.ga)}
+ <div style="position:relative;">${status()}${back('driver')}
+ <div style="padding:20px 22px 0;">
+ <div style="font-size:12px;color:${p.sec};letter-spacing:.3px;">Teammates · 2026</div>
+ <div style="font-size:42px;font-weight:800;color:${p.txt};letter-spacing:-1.7px;line-height:1.02;margin-top:8px;">Head<br>to head</div></div>
+ <div style="display:flex;gap:10px;padding:26px 20px 0;">
+ <div style="flex:1;background:${p.card};border-radius:24px;padding:16px 14px;box-shadow:${p.sh};text-align:center;">
+ <div class="circ" style="width:70px;height:70px;margin:0 auto;background:${ca}22;">
+ ${heroImg(a,"","object-position:top center;transform:scale(1.35) translateY(6%);")}</div>
+ <div style="font-size:15px;font-weight:700;color:${p.txt};margin-top:10px;">${a.l}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:2px;">#${a.n}</div></div>
+ <div style="display:flex;align-items:center;"><span style="font-size:12px;color:${p.sec};font-weight:600;">VS</span></div>
+ <div style="flex:1;background:${p.card};border-radius:24px;padding:16px 14px;box-shadow:${p.sh};text-align:center;">
+ <div class="circ" style="width:70px;height:70px;margin:0 auto;background:${cb}22;">
+ ${heroImg(b,"","object-position:top center;transform:scale(1.35) translateY(6%);")}</div>
+ <div style="font-size:15px;font-weight:700;color:${p.txt};margin-top:10px;">${b.l}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:2px;">#${b.n}</div></div></div>
+ <div style="margin:24px 20px 0;background:${p.card};border-radius:28px;padding:6px 20px 14px;box-shadow:${p.sh};">
+ ${row("POINTS",a.pts,b.pts)}${row("WINS",a.w,b.w)}${row("PODIUMS",a.pod,b.pod)}
+ ${row("POLES",a.pole,b.pole)}${row("QUALI H2H",6,3)}${row("RACE H2H",6,3)}</div>
+ <div style="padding:22px 22px 0;"><span style="font-size:21px;font-weight:800;color:${p.txt};letter-spacing:-.6px;">Qualifying gap</span></div>
+ <div style="margin:14px 20px 0;background:${p.card};border-radius:26px;padding:18px;box-shadow:${p.sh};">
+ <div style="font-size:34px;font-weight:800;color:${p.txt};letter-spacing:-1.4px;line-height:1;">+0.084<span style="font-size:13px;font-weight:500;color:${p.sec};margin-left:5px;">S</span></div>
+ <div style="font-size:11px;color:${p.sec};margin-top:6px;">Antonelli's median advantage over 9 rounds</div></div>
+ <div style="height:30px;"></div>${tabbar()}</div></div>`;}
+
+/* ---------- CONSTRUCTOR ---------- */
+const CINFO={Mercedes:{full:"Mercedes-AMG Petronas",base:"Brackley, UK",pu:"Mercedes",since:1954,champs:8,slug:"mercedes"},
+ Ferrari:{full:"Scuderia Ferrari",base:"Maranello, Italy",pu:"Ferrari",since:1950,champs:16,slug:"ferrari"},
+ McLaren:{full:"McLaren Formula 1 Team",base:"Woking, UK",pu:"Mercedes",since:1966,champs:9,slug:"mclaren"},
+ "Red Bull":{full:"Oracle Red Bull Racing",base:"Milton Keynes, UK",pu:"Red Bull Ford",since:2005,champs:6,slug:"red-bull-racing"}};
+let curCon="Mercedes";
+function openCon(t){curCon="Red Bull"===t?"Red Bull":t;go('constructor');}
+
+function constructor_(){const p=S();const t=curCon;const col=tc(t);
+ const inf=CINFO[t]||{full:t,base:"—",pu:"—",since:"—",champs:0,slug:""};
+ const ds=D.filter(d=>d.t===t);
+ const pts=CON.find(c=>c[0]===t)?.[1]||0;
+ const pos=CON.findIndex(c=>c[0]===t)+1;
+ const wins=ds.reduce((a,d)=>a+d.w,0), pods=ds.reduce((a,d)=>a+d.pod,0), poles=ds.reduce((a,d)=>a+d.pole,0);
+ const logo=`https://media.formula1.com/content/dam/fom-website/teams/2025/${inf.slug}-logo.png`;
+ const sc=(v,l)=>`<div style="flex:1;text-align:center;">
+ <div style="font-size:23px;font-weight:800;color:${p.txt};line-height:1;">${String(v).padStart(2,"0")}</div>
+ <div style="font-size:9px;color:${p.sec};margin-top:5px;letter-spacing:.4px;">${l}</div></div>`;
+ const meta=(ic,k,v)=>`<div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:.5px solid ${p.div};">
+ <i class="ti ti-${ic}" style="font-size:17px;color:${p.sec};width:19px;"></i>
+ <span style="flex:1;font-size:12px;color:${p.sec};">${k}</span>
+ <span style="font-size:13px;font-weight:500;color:${p.txt};">${v}</span></div>`;
+ let h=`<div style="position:relative;min-height:844px;"><div style="position:relative;">${status()}${back('standings')}
+ <div style="position:relative;height:398px;margin-top:-6px;">
+ <div style="position:absolute;left:50%;transform:translateX(-50%);top:26px;width:330px;height:330px;border-radius:50%;background:radial-gradient(circle, ${col}55 0%, ${p.gEnd} 68%);"></div>
+
+ <div style="position:absolute;left:0;right:0;top:14px;text-align:center;">
+ <div class="bigeng" style="color:${p.eng};font-size:150px;letter-spacing:-8px;">${String(pos).padStart(2,"0")}</div>
+ <div class="bignum ${p.cb}" style="font-size:150px;letter-spacing:-8px;-webkit-text-stroke:3px ${p.nStroke};
+  filter:drop-shadow(0 0 16px rgba(210,210,230,.12)) drop-shadow(0 0 46px ${col}55);">${String(pos).padStart(2,"0")}</div></div>
+
+ <div style="position:absolute;left:0;right:0;top:120px;display:flex;justify-content:center;gap:0;">`;
+ ds.slice(0,2).forEach((d,i)=>{h+=`<div class="tapc" onclick="openDriver(${D.indexOf(d)})" style="width:150px;height:196px;position:relative;${i?'margin-left:-26px;':''}">
+  ${heroImg(d,"hero","object-position:bottom center;")}
+  <div style="position:absolute;left:0;right:0;bottom:-2px;text-align:center;">
+  <div style="font-size:11px;font-weight:700;color:${p.txt};">${d.l}</div>
+  <div style="font-size:9px;color:${p.sec};margin-top:1px;">#${d.n} · ${d.pts} PTS</div></div></div>`;});
+ h+=`</div>
+
+ <div style="position:absolute;left:16px;top:206px;text-align:center;width:60px;">
+ <div style="font-size:38px;font-weight:800;color:${p.txt};letter-spacing:-1.6px;line-height:1;">${pts}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:6px;letter-spacing:.6px;">PTS</div></div>
+ <div style="position:absolute;right:16px;top:206px;text-align:center;width:60px;">
+ <div style="font-size:38px;font-weight:800;color:${p.txt};letter-spacing:-1.6px;line-height:1;">${inf.champs}</div>
+ <div style="font-size:10px;color:${p.sec};margin-top:6px;letter-spacing:.6px;">TITLES</div></div>
+
+ <div style="position:absolute;left:0;right:0;bottom:2px;text-align:center;">
+ <div style="font-size:11px;color:${p.sec};letter-spacing:.4px;">CONSTRUCTOR · 2026</div>
+ <div style="font-size:40px;font-weight:800;color:${col};letter-spacing:-1.6px;line-height:1.04;margin-top:5px;">${t}</div>
+ <div style="font-size:12px;color:${p.sec};margin-top:5px;">${inf.full}</div></div></div>
+
+ <div style="margin:22px 20px 0;background:${p.card};border-radius:26px;padding:17px 10px;box-shadow:${p.sh};display:flex;">
+ ${sc(wins,"WINS")}${sc(pods,"PODIUMS")}${sc(poles,"POLES")}${sc(ds.reduce((a,d)=>a+d.dnf,0),"DNFs")}</div>
+
+ <div style="margin:16px 20px 0;background:${p.card};border-radius:26px;padding:4px 20px 6px;box-shadow:${p.sh};">
+ ${meta("engine","Power unit",inf.pu)}${meta("map-pin","Base",inf.base)}
+ ${meta("calendar","In F1 since",inf.since)}
+ <div style="display:flex;align-items:center;gap:11px;padding:11px 0;">
+ <i class="ti ti-palette" style="font-size:17px;color:${p.sec};width:19px;"></i>
+ <span style="flex:1;font-size:12px;color:${p.sec};">Livery</span>
+ <img src="${logo}" alt="" style="height:17px;opacity:.9;" onerror="this.style.display='none'">
+ <div style="width:22px;height:12px;border-radius:3px;background:${col};margin-left:9px;"></div></div></div>
+
+ <div style="padding:22px 22px 0;"><span style="font-size:21px;font-weight:800;color:${p.txt};letter-spacing:-.6px;">Points per round</span></div>
+ <div style="margin:14px 20px 0;background:${p.card};border-radius:26px;padding:17px 18px 15px;box-shadow:${p.sh};">
+ <div style="display:flex;align-items:flex-end;gap:5px;height:64px;">`;
+ [30,43,25,38,44,18,41,47,32].forEach(v=>{h+=`<div style="flex:1;height:${Math.round(v/47*100)}%;background:${col};border-radius:3px 3px 0 0;opacity:${(0.42+v/47*0.55).toFixed(2)};"></div>`;});
+ h+=`</div><div style="display:flex;justify-content:space-between;margin-top:9px;">
+ <span style="font-size:10px;color:${p.sec};">R1</span>
+ <span style="font-size:10px;color:${p.sec};">Both cars combined</span>
+ <span style="font-size:10px;color:${p.sec};">R9</span></div></div>
+ <div style="height:30px;"></div>${tabbar()}</div></div>`;
+ return h;}
+
+/* ---------- ROUTER ---------- */
+const SC={home,weekend,result,standings,cal,driver,constructor:constructor_,h2h};
+const LBL={home:"Tab home",weekend:"Race weekend",result:"Race result",standings:"Standings",
+ cal:"Calendar",driver:"Driver",constructor:"Constructor",h2h:"Head to head"};
+const HINTS={home:"F-01 · F-02 · F-03 — countdown is real: Belgian GP is Sunday 19 July.",
+ weekend:"F-01 — circuit stats + session schedule. Track shape is approximate; MultiViewer's circuit_info_url has real geometry for all 22.",
+ result:"F-04 · F-07 — full classification with DNF reasons. 22 rows, compact density.",
+ standings:"F-02 · F-03 — real standings after Round 9. Tap any driver.",
+ cal:"F-09 — all 22 rounds. Past dimmed, next accented, future neutral.",
+ driver:"F-12 — real headshot from F1's CDN, duotoned to team_colour. Number glows in team colour too.",
+ constructor:"F-13 — livery hero not possible: F1 publishes no 2026 car art, and 2025 is 465x139 with no alpha. Hero is both drivers + championship position instead.",
+ h2h:"F-11 — the one I said to build. Pure local computation, zero extra API cost."};
+
+function go(s){screen=s;render();el('scroll').scrollTop=0;}
+function render(){
+ const p=S();
+ el('phone').style.background=p.canvas;
+ el('scroll').innerHTML=duoDefs()+SC[screen]();
+ el('hint').textContent=HINTS[screen]||"";
+ el('nav').innerHTML=Object.keys(SC).map(k=>
+  `<button class="${screen===k?'on':''}" onclick="go('${k}')">${LBL[k]}</button>`).join("")
+  +`<button onclick="tog()">${mode==='dark'?'☾ Dark':'☀ Light'}</button>`;
+}
+function tog(){mode=mode==='dark'?'light':'dark';document.body.classList.toggle('lt',mode==='light');render();}
+render();
+</script>
+</body>
+</html>
