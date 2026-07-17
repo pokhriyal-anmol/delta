@@ -7,9 +7,12 @@ V="${1:?usage: ./release.sh v1.1}"
 ./gradlew assembleRelease
 APK=app/build/outputs/apk/release/app-release.apk
 
-OWNER=$(keytool -printcert -jarfile "$APK" | grep -m1 "Owner:" || true)
-echo "$OWNER"
-[[ "$OWNER" == *"CN=Anmol"* ]] || { echo "✗ WRONG SIGNER — aborting"; exit 1; }
+# APKs use v2/v3 signing — keytool CANNOT read these. apksigner only.
+SDK=$(grep '^sdk.dir=' local.properties | cut -d= -f2-)
+APKSIGNER=$(ls "$SDK"/build-tools/*/apksigner | sort -V | tail -1)
+DN=$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 "certificate DN" || true)
+echo "$DN"
+[[ "$DN" == *"CN=Anmol"* ]] || { echo "✗ WRONG SIGNER — aborting"; exit 1; }
 
 git tag -a "$V" -m "$V" 2>/dev/null || echo "tag $V already exists"
 git push origin "$V"
