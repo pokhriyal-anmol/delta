@@ -16,6 +16,8 @@ Same filenames in each:
 | `04-driver-hamilton.png` | Driver — Hamilton (Ferrari red glow, carbon #44) |
 | `05-weekend.png` | Race weekend — 3D circuit hero (Spa) + circuit stats |
 | `06-weekend-schedule.png` | Race weekend — session schedule, Sunday race accented |
+| `07-calendar.png` | Calendar (F-09) — 22 rounds, past dimmed, next accented, future neutral |
+| `08-constructor.png` | Constructor (F-13) — carbon position, both drivers, stats, team facts |
 
 Regenerate both sets by toggling `adb shell cmd uimode night yes|no` and re-shooting each flow.
 Stat card and results chart derive from `/results`; circuit geometry from MultiViewer.

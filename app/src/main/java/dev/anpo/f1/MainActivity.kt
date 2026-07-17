@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -48,12 +51,22 @@ class MainActivity : ComponentActivity() {
                 var tab by remember { mutableStateOf(2) }
 
                 Box(Modifier.fillMaxSize().background(p.canvas)) {
-                    NavHost(nav, startDestination = "home") {
+                    // Plain cross-fades on every route. The default slide + predictive-back
+                    // preview was translating the whole screen to a corner and bouncing.
+                    NavHost(
+                        nav, startDestination = "home",
+                        enterTransition = { fadeIn(tween(180)) },
+                        exitTransition = { fadeOut(tween(140)) },
+                        popEnterTransition = { fadeIn(tween(180)) },
+                        popExitTransition = { fadeOut(tween(140)) },
+                    ) {
                         composable("home") {
                             HomeScreen(repo,
                                 onDriver = { nav.navigate("driver/$it") },
                                 onStandings = { nav.navigate("standings") },
-                                onWeekend = { nav.navigate("weekend") })
+                                onWeekend = { nav.navigate("weekend") },
+                                onCalendar = { nav.navigate("calendar") },
+                                onConstructor = { nav.navigate("constructor/$it") })
                         }
                         composable("standings") {
                             StandingsScreen(repo, onDriver = { nav.navigate("driver/$it") })
@@ -61,8 +74,15 @@ class MainActivity : ComponentActivity() {
                         composable("weekend") {
                             WeekendScreen(repo)
                         }
+                        composable("calendar") {
+                            CalendarScreen(repo)
+                        }
                         composable("driver/{id}") { e ->
                             DriverScreen(repo, e.arguments?.getString("id").orEmpty())
+                        }
+                        composable("constructor/{id}") { e ->
+                            ConstructorScreen(repo, e.arguments?.getString("id").orEmpty(),
+                                onDriver = { nav.navigate("driver/$it") })
                         }
                     }
 

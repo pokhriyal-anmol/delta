@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** Static per-circuit facts the geometry API doesn't carry. */
 data class CircuitFacts(val lengthKm: String, val laps: Int, val topSpeed: String, val elevation: String)
 
+/** Static constructor facts (name/base/power unit/history) not in the standings API. */
+data class ConstructorInfo(val full: String, val base: String, val pu: String, val since: Int, val champs: Int)
+
 class Repo(ctx: Context) {
     private val dao = FeedsDb.get(ctx).dao()
     private val limiter = RateLimiter(ctx, "jolpica", capacity = 200, refillPerHour = 200)
@@ -134,6 +137,22 @@ class Repo(ctx: Context) {
     /** team_colour is not in Jolpica - it's an OpenF1 field. Since OpenF1 is
      *  unreachable during live sessions, these are pinned locally. 11 teams,
      *  changes once a year: a constant is more reliable than a request. */
+    /** Pinned constructor facts (like teamColour) - names/base/PU/titles the API omits. */
+    fun constructorInfo(teamId: String): ConstructorInfo = when (teamId) {
+        "mercedes" -> ConstructorInfo("Mercedes-AMG Petronas", "Brackley, UK", "Mercedes", 1954, 8)
+        "ferrari" -> ConstructorInfo("Scuderia Ferrari", "Maranello, Italy", "Ferrari", 1950, 16)
+        "mclaren" -> ConstructorInfo("McLaren F1 Team", "Woking, UK", "Mercedes", 1966, 9)
+        "red_bull" -> ConstructorInfo("Oracle Red Bull Racing", "Milton Keynes, UK", "Red Bull Ford", 2005, 6)
+        "aston_martin" -> ConstructorInfo("Aston Martin Aramco", "Silverstone, UK", "Honda", 2021, 0)
+        "alpine" -> ConstructorInfo("BWT Alpine F1 Team", "Enstone, UK", "Mercedes", 1986, 2)
+        "williams" -> ConstructorInfo("Williams Racing", "Grove, UK", "Mercedes", 1977, 9)
+        "rb" -> ConstructorInfo("Visa Cash App RB", "Faenza, Italy", "Red Bull Ford", 2020, 0)
+        "haas" -> ConstructorInfo("MoneyGram Haas F1", "Kannapolis, USA", "Ferrari", 2016, 0)
+        "audi" -> ConstructorInfo("Audi F1 Team", "Hinwil, Switzerland", "Audi", 2026, 0)
+        "cadillac" -> ConstructorInfo("Cadillac F1 Team", "USA", "Ferrari", 2026, 0)
+        else -> ConstructorInfo(teamId, "—", "—", 0, 0)
+    }
+
     fun teamColour(teamId: String): String = when (teamId) {
         "mclaren" -> "F47600"; "red_bull" -> "4781D7"; "ferrari" -> "ED1131"
         "mercedes" -> "00D7B6"; "aston_martin" -> "229971"; "alpine" -> "00A1E8"

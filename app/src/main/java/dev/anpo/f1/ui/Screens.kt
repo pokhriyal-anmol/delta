@@ -6,16 +6,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.anpo.f1.R
 import dev.anpo.f1.data.*
 import coil.compose.AsyncImage
 import java.time.*
@@ -27,7 +31,8 @@ private fun raceInstant(r: RaceEntity): Instant? = runCatching {
 }.getOrNull()
 
 @Composable
-fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit, onWeekend: () -> Unit) {
+fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
+               onWeekend: () -> Unit, onCalendar: () -> Unit, onConstructor: (String) -> Unit) {
     val p = LocalPalette.current
     val drivers by repo.drivers().collectAsState(emptyList())
     val teams by repo.teams().collectAsState(emptyList())
@@ -39,27 +44,49 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit, 
     val next = races.firstOrNull { r -> raceInstant(r)?.isAfter(Instant.now()) == true }
     val d = Duration.between(Instant.now(), raceInstant(next ?: return@HomeScreen) ?: Instant.now())
 
+    var geo by remember(next.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
+    LaunchedEffect(next.circuitId) { repo.refreshCircuit(next.circuitId); geo = repo.circuit(next.circuitId) }
+
     LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
         item {
-            Column(Modifier.clickable { onWeekend() }
-                .padding(horizontal = F1Dim.screenPad).padding(top = 60.dp)) {
-                Text("Formula 1", style = F1Type.body.copy(color = p.sec))
-                Spacer(Modifier.height(18.dp))
-                Text("Round ${next.round} · Next up", style = F1Type.meta.copy(color = p.sec))
-                Spacer(Modifier.height(8.dp))
-                // Poster type. Wraps on purpose - a short name gets BIGGER, not narrower.
-                Text(next.name.replace(" Grand Prix", "\nGrand Prix"),
-                    style = F1Type.display.copy(color = p.txt), lineHeight = 41.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(next.circuitName, style = F1Type.body.copy(color = p.accent, fontSize = 16.sp))
-                Spacer(Modifier.height(28.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
-                    CountBlock("%02d".format(d.toDays()), "DAYS")
-                    CountBlock("%02d".format(d.toHours() % 24), "HOURS")
-                    CountBlock("%02d".format(d.toMinutes() % 60), "MINS")
+            Box(Modifier.fillMaxWidth()) {
+                // The next circuit bleeds off the right, behind the title (ref home: right:-44, top:120).
+                geo?.let { g ->
+                    Circuit3D(g, Modifier.size(230.dp).align(Alignment.TopEnd).offset(x = 46.dp, y = 100.dp))
                 }
-                Spacer(Modifier.height(15.dp))
-                Text("Lights out ${next.date} · reminder on", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
+                Column {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = F1Dim.screenPad).padding(top = 60.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Formula 1", style = F1Type.body.copy(color = p.sec))
+                        Row(Modifier.clip(CircleShape).background(p.nav).clickable { onCalendar() }
+                            .padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("2026", style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
+                            Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = "Calendar",
+                                tint = p.sec, modifier = Modifier.size(13.dp))
+                        }
+                    }
+                    Column(Modifier.clickable { onWeekend() }
+                        .padding(horizontal = F1Dim.screenPad).padding(top = 18.dp)) {
+                        Text("Round ${next.round} · Next up", style = F1Type.meta.copy(color = p.sec))
+                        Spacer(Modifier.height(8.dp))
+                        // Poster type. Wraps on purpose; width capped so it clears the circuit.
+                        Text(next.name.replace(" Grand Prix", "\nGrand Prix"),
+                            style = F1Type.display.copy(color = p.txt), lineHeight = 41.sp,
+                            modifier = Modifier.fillMaxWidth(0.62f))
+                        Spacer(Modifier.height(8.dp))
+                        Text(next.circuitName, style = F1Type.body.copy(color = p.accent, fontSize = 16.sp))
+                        Spacer(Modifier.height(28.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
+                            CountBlock("%02d".format(d.toDays()), "DAYS")
+                            CountBlock("%02d".format(d.toHours() % 24), "HOURS")
+                            CountBlock("%02d".format(d.toMinutes() % 60), "MINS")
+                        }
+                        Spacer(Modifier.height(15.dp))
+                        Text("Lights out ${next.date} · reminder on", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
+                    }
+                }
             }
         }
         item {
@@ -84,7 +111,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit, 
         item {
             Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 teams.take(3).forEach { t ->
-                    F1Card(Modifier.weight(1f), radius = 22) {
+                    F1Card(Modifier.weight(1f).clickable { onConstructor(t.teamId) }, radius = 22) {
                         Column(Modifier.padding(14.dp)) {
                             Box(Modifier.width(22.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
                                 .background(teamColour(repo.teamColour(t.teamId))))
@@ -393,5 +420,162 @@ private fun PointsByRound(csv: String, col: Color) {
                 }
             }
         }
+    }
+}
+
+/* ---------- Calendar (F-09) ---------- */
+
+@Composable
+fun CalendarScreen(repo: Repo) {
+    val p = LocalPalette.current
+    val races by repo.races().collectAsState(emptyList())
+    LaunchedEffect(Unit) { repo.refreshRaces() }
+    val now = Instant.now()
+    val nextRound = races.firstOrNull { raceInstant(it)?.isAfter(now) == true }?.round
+    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark),
+        contentPadding = PaddingValues(top = 60.dp, bottom = 140.dp)) {
+        item {
+            Column(Modifier.padding(F1Dim.screenPad)) {
+                Text("${races.size} rounds", style = F1Type.meta.copy(color = p.sec))
+                Spacer(Modifier.height(8.dp))
+                Text("2026\nCalendar", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
+            }
+        }
+        item { Spacer(Modifier.height(20.dp)) }
+        items(races) { r ->
+            CalendarRow(r,
+                done = raceInstant(r)?.isBefore(now) == true,
+                isNext = r.round == nextRound)
+        }
+    }
+}
+
+@Composable
+private fun CalendarRow(r: RaceEntity, done: Boolean, isNext: Boolean) {
+    val p = LocalPalette.current
+    val bg = if (isNext) (if (p.isDark) Color(0xFF1A1216) else Color(0xFFFFF4F4)) else p.card
+    val date = runCatching { LocalDate.parse(r.date).format(DateTimeFormatter.ofPattern("d MMM")) }.getOrDefault(r.date)
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp)
+            .clip(RoundedCornerShape(24.dp)).background(bg)
+            .then(if (isNext) Modifier.border(0.7.dp, p.accent.copy(alpha = 0.35f), RoundedCornerShape(24.dp)) else Modifier)
+            .alpha(if (done) 0.55f else 1f)
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(Modifier.size(38.dp).clip(CircleShape).background(if (isNext) p.accent else p.chip),
+            contentAlignment = Alignment.Center) {
+            Text("${r.round}", style = F1Type.stat.copy(color = if (isNext) Color.White else p.txt, fontSize = 13.sp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(r.name.replace(" Grand Prix", " GP"), style = F1Type.body.copy(color = p.txt), maxLines = 1)
+            Spacer(Modifier.height(2.dp))
+            Text(r.locality ?: r.circuitName, maxLines = 1,
+                style = F1Type.label.copy(color = if (isNext) p.accent else p.sec, fontSize = 10.sp))
+        }
+        Text(date, style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
+    }
+}
+
+/* ---------- Constructor (F-13) ---------- */
+
+@Composable
+fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
+    val p = LocalPalette.current
+    val teams by repo.teams().collectAsState(emptyList())
+    val allDrivers by repo.drivers().collectAsState(emptyList())
+    val team = teams.firstOrNull { it.teamId == teamId } ?: return
+    val position = teams.indexOfFirst { it.teamId == teamId } + 1
+    val col = teamColour(repo.teamColour(teamId))
+    val info = repo.constructorInfo(teamId)
+    val teamDrivers = allDrivers.filter { it.teamId == teamId }.take(2)
+    val wins = teamDrivers.sumOf { it.wins }
+
+    var podiums by remember { mutableStateOf(0) }
+    var poles by remember { mutableStateOf(0) }
+    var dnfs by remember { mutableStateOf(0) }
+    LaunchedEffect(teamId, teamDrivers.map { it.driverId }) {
+        repo.refreshResults()
+        var pod = 0; var pol = 0; var dnf = 0
+        teamDrivers.forEach { d -> repo.driverStat(d.driverId)?.let { pod += it.podiums; pol += it.poles; dnf += it.dnfs } }
+        podiums = pod; poles = pol; dnfs = dnf
+    }
+
+    Column(Modifier.fillMaxSize().background(p.canvas).verticalScroll(rememberScrollState())) {
+        Box(Modifier.fillMaxWidth().height(430.dp).glow(col)) {
+            CarbonNumber("%02d".format(position), col,
+                Modifier.fillMaxWidth().height(250.dp).align(Alignment.TopCenter).padding(top = 24.dp), sizeSp = 200f)
+            // Both drivers, overlapping slightly, tappable through to their pages.
+            Row(Modifier.align(Alignment.TopCenter).padding(top = 128.dp)) {
+                teamDrivers.forEachIndexed { i, dr ->
+                    val key = repo.headshotKey(dr.driverId)
+                    Box(Modifier.width(150.dp).height(196.dp)
+                        .offset(x = if (i == 1) (-26).dp else 0.dp)
+                        .clickable { onDriver(dr.driverId) }) {
+                        if (key != null) {
+                            // Mask on a WRAPPER, not on AsyncImage: Coil composites its
+                            // painter in its own layer, so a DstIn rect on the image's own
+                            // modifier never bites. Crop so the chest reaches the box bottom
+                            // and fades off, instead of letterboxing above it.
+                            Box(Modifier.fillMaxSize().fadeBottom()) {
+                                AsyncImage(model = Net.headshot(key), contentDescription = dr.family,
+                                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            }
+                        }
+                        Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(dr.family, style = F1Type.label.copy(color = p.txt, fontSize = 11.sp))
+                            Text("#${dr.number ?: 0} · ${dr.points} PTS", style = F1Type.label.copy(color = p.sec, fontSize = 9.sp))
+                        }
+                    }
+                }
+            }
+            Column(Modifier.align(BiasAlignment(-1f, -0.15f)).padding(start = 14.dp).wrapContentWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("${team.points}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
+                Text("PTS", style = F1Type.label.copy(color = p.sec))
+            }
+            Column(Modifier.align(BiasAlignment(1f, -0.15f)).padding(end = 14.dp).wrapContentWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("${info.champs}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
+                Text("TITLES", style = F1Type.label.copy(color = p.sec))
+            }
+            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("CONSTRUCTOR · 2026", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
+                Spacer(Modifier.height(5.dp))
+                Text(team.name, style = F1Type.name.copy(color = col))
+                Text(info.full, style = F1Type.meta.copy(color = p.sec))
+            }
+        }
+        F1Card(Modifier.padding(horizontal = 20.dp).padding(top = 22.dp), radius = 26) {
+            Row(Modifier.padding(vertical = 17.dp, horizontal = 10.dp)) {
+                StatBlock("%02d".format(wins), "WINS", Modifier.weight(1f))
+                StatBlock("%02d".format(podiums), "PODIUMS", Modifier.weight(1f))
+                StatBlock("%02d".format(poles), "POLES", Modifier.weight(1f))
+                StatBlock("%02d".format(dnfs), "DNFs", Modifier.weight(1f))
+            }
+        }
+        F1Card(Modifier.padding(horizontal = 20.dp).padding(top = 14.dp), radius = 26) {
+            Column(Modifier.padding(horizontal = 18.dp, vertical = 6.dp)) {
+                MetaRow("Full name", info.full)
+                MetaRow("Base", info.base)
+                MetaRow("Power unit", info.pu)
+                MetaRow("Entered F1", "${info.since}")
+                MetaRow("Constructors' titles", "${info.champs}", last = true)
+            }
+        }
+        Spacer(Modifier.height(140.dp))
+    }
+}
+
+@Composable
+private fun MetaRow(k: String, v: String, last: Boolean = false) {
+    val p = LocalPalette.current
+    Column {
+        Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(k, style = F1Type.meta.copy(color = p.sec), modifier = Modifier.weight(1f))
+            Text(v, style = F1Type.body.copy(color = p.txt, fontSize = 13.sp))
+        }
+        if (!last) Box(Modifier.fillMaxWidth().height(0.5.dp).background(p.divider))
     }
 }
