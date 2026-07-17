@@ -26,10 +26,22 @@ import kotlinx.serialization.Serializable
 @Serializable data class JTeam(val constructorId: String, val name: String, val nationality: String? = null)
 @Serializable data class RaceTable(val season: String? = null, @SerialName("Races") val races: List<JRace> = emptyList())
 @Serializable data class JRace(val season: String, val round: String, val raceName: String,
-    val date: String, val time: String? = null, @SerialName("Circuit") val circuit: JCircuit)
+    val date: String, val time: String? = null, @SerialName("Circuit") val circuit: JCircuit,
+    @SerialName("Results") val results: List<JResult> = emptyList())
+@Serializable data class JResult(val position: String, val positionText: String,
+    val points: String, val grid: String, val status: String? = null,
+    @SerialName("Driver") val driver: JDriver)
 @Serializable data class JCircuit(val circuitId: String, val circuitName: String,
     @SerialName("Location") val location: JLocation)
 @Serializable data class JLocation(val locality: String? = null, val country: String? = null)
+
+/* ---------- MultiViewer wire format (circuit geometry) ---------- */
+
+@Serializable data class MvCircuit(
+    val x: List<Float> = emptyList(), val y: List<Float> = emptyList(), val rotation: Float = 0f,
+    val corners: List<MvCorner> = emptyList())
+@Serializable data class MvCorner(val number: Int = 0, @SerialName("trackPosition") val pos: MvPos? = null)
+@Serializable data class MvPos(val x: Float = 0f, val y: Float = 0f)
 
 /* ---------- Room: feeds.db. Disposable cache, never the source of truth. ---------- */
 
@@ -42,10 +54,35 @@ data class DriverStandingEntity(
     val fetchedAt: Long,
 )
 
+/** Derived per-driver season aggregates, computed from /results (which the standings
+ *  endpoint doesn't carry). Poles are grid-P1 counts - a fair proxy without a second
+ *  call to /qualifying; DNF = a non-numeric classification (positionText "R"/"D"/...). */
+@Entity(tableName = "driver_season_stat")
+data class DriverSeasonStat(
+    @PrimaryKey val driverId: String,
+    val season: String, val podiums: Int, val poles: Int, val dnfs: Int,
+    /** Points scored each round, in order, as CSV ("0,25,18,..."). Drives the bar chart. */
+    val roundPoints: String,
+    val fetchedAt: Long,
+)
+
 @Entity(tableName = "constructor_standing")
 data class ConstructorStandingEntity(
     @PrimaryKey val teamId: String,
     val season: String, val position: Int, val points: Int, val wins: Int, val name: String,
+    val fetchedAt: Long,
+)
+
+/** Circuit outline from MultiViewer, decimated to every 2nd point and stored as CSV.
+ *  Track geometry is immutable, so this is fetched once and kept forever (no TTL).
+ *  Rotation is applied and the path normalised to the canvas at render time. */
+@Entity(tableName = "circuit_geometry")
+data class CircuitGeometryEntity(
+    @PrimaryKey val circuitId: String,
+    val rotation: Float, val xs: String, val ys: String,
+    /** Turns = corner count. eauStart/eauEnd are decimated-point indices for the
+     *  Eau Rouge -> Raidillon stretch, derived from corners 2..5 at fetch time. */
+    val corners: Int, val eauStart: Int, val eauEnd: Int,
     val fetchedAt: Long,
 )
 

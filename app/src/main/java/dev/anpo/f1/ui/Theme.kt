@@ -4,9 +4,30 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.anpo.f1.R
+
+/**
+ * Two Inter families split by optical size, same idea as SF Text vs SF Display: the
+ * Display cut is drawn tighter and is used at 23sp and up; the Text cut keeps digits
+ * and small copy legible below that.
+ */
+val InterText = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_bold, FontWeight.Bold),
+)
+val InterDisplay = FontFamily(
+    Font(R.font.inter_display_bold, FontWeight.Bold),
+    Font(R.font.inter_display_extrabold, FontWeight.ExtraBold),
+)
+
+/** Tabular figures - every number in the app uses these so columns don't jitter. */
+private const val TNUM = "tnum"
 
 /**
  * The design system, as agreed. Every value here was a decision:
@@ -35,7 +56,7 @@ private val Dark = F1Palette(
     canvas = Color(0xFF050506), card = Color(0xFF131316), chip = Color(0xFF1E1E23),
     nav = Color(0xFF16161A), txt = Color(0xFFFFFFFF), sec = Color(0xFF848484),
     ter = Color(0xFFA7A7A7), qua = Color(0xFFC5C5C5), divider = Color(0xFF1E1E23),
-    accent = Color(0xFFD71921), barBg = Color(0xB818181D),
+    accent = Color(0xFFD71921), barBg = Color(0xFF18181D),
     trackBase = Color(0xFF1C1C20), trackMain = Color(0xFFA7A7A7), track3d = Color(0xFF2A2A33),
     numStroke = Color(0xFF43434F), engrave = Color(0x0FFFFFFF), isDark = true,
 )
@@ -44,7 +65,7 @@ private val Light = F1Palette(
     canvas = Color(0xFFF5F5F3), card = Color(0xFFFFFFFF), chip = Color(0xFFF0F0EE),
     nav = Color(0xFFFFFFFF), txt = Color(0xFF0A0A0A), sec = Color(0xFF848484),
     ter = Color(0xFFA7A7A7), qua = Color(0xFF9A9A94), divider = Color(0xFFEDEDEA),
-    accent = Color(0xFFD71921), barBg = Color(0xBDFFFFFF),
+    accent = Color(0xFFD71921), barBg = Color(0xFFFFFFFF),   // opaque: 74% white vanished on white cards
     trackBase = Color(0xFFE6E6E3), trackMain = Color(0xFF3A3A3A), track3d = Color(0xFFBEBEB6),
     numStroke = Color(0xFFD2D2CB), engrave = Color(0x12000000), isDark = false,
 )
@@ -56,16 +77,20 @@ fun F1Theme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Un
     CompositionLocalProvider(LocalPalette provides if (dark) Dark else Light, content = content)
 }
 
-/** Type ladder. Weight 800 or 500 or 400 - nothing between. */
+/**
+ * Type ladder. Weight 800 / 700 / 500 / 400 - nothing between 23 and 38sp.
+ * Display cut (InterDisplay) at 23sp and up; Text cut (InterText) below. Tracking was
+ * retuned for Inter Display, which sets tighter than Roboto (hero/display loosened).
+ */
 object F1Type {
-    val hero    = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-2).sp)
-    val display = TextStyle(fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.7).sp)
-    val name    = TextStyle(fontSize = 38.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.5).sp)
-    val section = TextStyle(fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp)
-    val stat    = TextStyle(fontSize = 19.sp, fontWeight = FontWeight.Bold)
-    val body    = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium)
-    val meta    = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal)
-    val label   = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.5.sp)
+    val hero    = TextStyle(fontFamily = InterDisplay, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.4).sp, fontFeatureSettings = TNUM)
+    val display = TextStyle(fontFamily = InterDisplay, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.2).sp, fontFeatureSettings = TNUM)
+    val name    = TextStyle(fontFamily = InterDisplay, fontSize = 38.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-1.2).sp, fontFeatureSettings = TNUM)
+    val section = TextStyle(fontFamily = InterDisplay, fontSize = 23.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.5).sp, fontFeatureSettings = TNUM)
+    val stat    = TextStyle(fontFamily = InterText, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFeatureSettings = TNUM)
+    val body    = TextStyle(fontFamily = InterText, fontSize = 15.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = TNUM)
+    val meta    = TextStyle(fontFamily = InterText, fontSize = 12.sp, fontWeight = FontWeight.Normal, fontFeatureSettings = TNUM)
+    val label   = TextStyle(fontFamily = InterText, fontSize = 10.sp, fontWeight = FontWeight.Normal, letterSpacing = 0.5.sp, fontFeatureSettings = TNUM)
 }
 
 object F1Dim {

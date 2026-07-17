@@ -9,16 +9,22 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT * FROM constructor_standing WHERE season = :s ORDER BY position") fun teams(s: String): Flow<List<ConstructorStandingEntity>>
     @Query("SELECT * FROM race WHERE season = :s ORDER BY round") fun races(s: String): Flow<List<RaceEntity>>
     @Query("SELECT * FROM driver_standing WHERE driverId = :id LIMIT 1") suspend fun driver(id: String): DriverStandingEntity?
+    @Query("SELECT * FROM driver_season_stat WHERE driverId = :id LIMIT 1") suspend fun driverStat(id: String): DriverSeasonStat?
+    @Query("SELECT * FROM circuit_geometry WHERE circuitId = :id LIMIT 1") suspend fun circuit(id: String): CircuitGeometryEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCircuit(x: CircuitGeometryEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putDrivers(x: List<DriverStandingEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putTeams(x: List<ConstructorStandingEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putRaces(x: List<RaceEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putStats(x: List<DriverSeasonStat>)
     @Query("SELECT MIN(fetchedAt) FROM driver_standing WHERE season = :s") suspend fun driversFetchedAt(s: String): Long?
     @Query("SELECT MIN(fetchedAt) FROM race WHERE season = :s") suspend fun racesFetchedAt(s: String): Long?
+    @Query("SELECT MIN(fetchedAt) FROM driver_season_stat WHERE season = :s") suspend fun statsFetchedAt(s: String): Long?
 }
 
 @Database(
-    entities = [DriverStandingEntity::class, ConstructorStandingEntity::class, RaceEntity::class],
-    version = 1, exportSchema = false
+    entities = [DriverStandingEntity::class, ConstructorStandingEntity::class, RaceEntity::class,
+        DriverSeasonStat::class, CircuitGeometryEntity::class],
+    version = 5, exportSchema = false
 )
 abstract class FeedsDb : RoomDatabase() {
     abstract fun dao(): F1Dao

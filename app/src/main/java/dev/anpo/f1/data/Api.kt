@@ -22,6 +22,20 @@ interface JolpicaApi {
 
     @GET("ergast/f1/{season}/{round}/results/")
     suspend fun results(@Path("season") season: String, @Path("round") round: Int): JolpicaEnvelope
+
+    /** Season results, paginated. Jolpica CAPS limit at 100 regardless of what you ask
+     *  for, so a full season (~200 rows) is 2 requests via offset. Cached daily, this
+     *  derives podiums, poles, DNFs and points-per-round for every driver. */
+    @GET("ergast/f1/{season}/results/")
+    suspend fun seasonResults(@Path("season") season: String,
+        @Query("limit") limit: Int = 100, @Query("offset") offset: Int = 0): JolpicaEnvelope
+}
+
+interface MultiViewerApi {
+    /** Circuit outline for a given MultiViewer circuit key and year. Free, no auth,
+     *  real geometry for all 22 tracks (Spa = key 7). ~1005 points + rotation. */
+    @GET("api/v1/circuits/{key}/{year}")
+    suspend fun circuit(@Path("key") key: Int, @Path("year") year: Int = 2026): MvCircuit
 }
 
 object Net {
@@ -41,6 +55,15 @@ object Net {
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(JolpicaApi::class.java)
+
+    /** Not rate-limited like Jolpica, and unrelated to OpenF1 - MultiViewer serves
+     *  static circuit geometry, so it stays up during live sessions. */
+    val multiviewer: MultiViewerApi = Retrofit.Builder()
+        .baseUrl("https://api.multiviewer.app/")
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
+        .create(MultiViewerApi::class.java)
 
     /** F1's own CDN. headshot_url from OpenF1 points here; we build it ourselves
      *  so we don't need OpenF1 at all - which matters, because OpenF1's free tier

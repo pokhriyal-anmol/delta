@@ -1,8 +1,38 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
+}
+
+// Release signing is loaded from keystore.properties (gitignored) - the password is
+// never inlined here. Absent that file, the build falls back to the debug key so it
+// stays testable; a real release must be signed with your own keystore.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val hasReleaseKeystore = keystorePropertiesFile.exists()
+val keystoreProperties = Properties().apply {
+    if (hasReleaseKeystore) FileInputStream(keystorePropertiesFile).use { load(it) }
+}
+
+// Fail a RELEASE build outright if there's no keystore, instead of silently signing
+// with the debug key (whose password is the public "android" and is identical on every
+// machine - anyone could then ship an update over yours). Debug builds are unaffected.
+if (!hasReleaseKeystore) {
+    gradle.taskGraph.whenReady {
+        val wantsRelease = allTasks.any { t ->
+            val n = t.name
+            n.endsWith("Release") && (n.startsWith("assemble") || n.startsWith("bundle") ||
+                n.startsWith("package") || n.startsWith("install"))
+        }
+        if (wantsRelease) throw GradleException(
+            "keystore.properties not found — refusing to sign a release with the public debug key. " +
+            "Copy keystore.properties.example to keystore.properties and fill it in " +
+            "(generate your keystore first). assembleDebug still works without it."
+        )
+    }
 }
 
 android {
@@ -14,8 +44,19 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0"
         // No analytics, no crash reporting, no ad SDK. Nothing phones home.
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +64,9 @@ android {
             isMinifyEnabled = true          // R8: shrink + obfuscate
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Your release keystore ONLY - no debug fallback. If it's absent the build is
+            // failed by the taskGraph guard above before it can produce an APK.
+            if (hasReleaseKeystore) signingConfig = signingConfigs.getByName("release")
         }
         debug { isMinifyEnabled = false }
     }

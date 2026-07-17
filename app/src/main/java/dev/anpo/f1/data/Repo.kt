@@ -4,6 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/** Static per-circuit facts the geometry API doesn't carry. */
+data class CircuitFacts(val lengthKm: String, val laps: Int, val topSpeed: String, val elevation: String)
+
 class Repo(ctx: Context) {
     private val dao = FeedsDb.get(ctx).dao()
     private val limiter = RateLimiter(ctx, "jolpica", capacity = 200, refillPerHour = 200)
@@ -16,6 +19,7 @@ class Repo(ctx: Context) {
     fun teams(): Flow<List<ConstructorStandingEntity>> = dao.teams(season)
     fun races(): Flow<List<RaceEntity>> = dao.races(season)
     suspend fun driver(id: String) = dao.driver(id)
+    suspend fun driverStat(id: String) = dao.driverStat(id)
     fun tokensLeft() = limiter.remaining()
 
     private val DAY = 86_400_000L
@@ -63,6 +67,50 @@ class Repo(ctx: Context) {
         loading.value = false
     }
 
+    /** Per-driver podiums / poles / DNFs, derived from the whole season's results in
+     *  one request. Standings change only after a race, so a daily TTL is plenty. */
+    suspend fun refreshResults(force: Boolean = false) {
+        val age = dao.statsFetchedAt(season)
+        if (!force && age != null && System.currentTimeMillis() - age < DAY) return
+        runCatching {
+            // Jolpica caps limit at 100, so page through with offset until we have `total`.
+            val races = mutableListOf<JRace>()
+            var offset = 0; var total = Int.MAX_VALUE
+            while (offset < total) {
+                limiter.acquire()
+                val page = Net.jolpica.seasonResults(season, 100, offset)
+                total = page.data.total?.toIntOrNull() ?: 0
+                val pageRaces = page.data.races?.races.orEmpty()
+                if (pageRaces.isEmpty()) break
+                races += pageRaces
+                offset += 100
+            }
+            val now = System.currentTimeMillis()
+            val agg = HashMap<String, IntArray>()            // driverId -> [podiums, poles, dnfs]
+            val perRound = HashMap<String, HashMap<Int, Int>>() // driverId -> round -> points
+            races.forEach { race ->
+                val rnd = race.round.toIntOrNull()
+                race.results.forEach { res ->
+                    val id = res.driver.driverId
+                    val a = agg.getOrPut(id) { IntArray(3) }
+                    val finish = res.positionText.toIntOrNull()   // numeric = classified finish
+                    if (finish != null && finish <= 3) a[0]++      // podium
+                    if (res.grid.toIntOrNull() == 1) a[1]++        // pole (started P1)
+                    if (finish == null) a[2]++                     // DNF (R/D/W/... not a number)
+                    if (rnd != null) perRound.getOrPut(id) { HashMap() }[rnd] = res.points.toIntOrNull() ?: 0
+                }
+            }
+            val maxRound = races.mapNotNull { it.round.toIntOrNull() }.maxOrNull() ?: 0
+            if (agg.isNotEmpty()) dao.putStats(agg.map { (id, a) ->
+                val rounds = perRound[id]
+                val csv = (1..maxRound).joinToString(",") { (rounds?.get(it) ?: 0).toString() }
+                DriverSeasonStat(id, season, podiums = a[0], poles = a[1], dnfs = a[2],
+                    roundPoints = csv, fetchedAt = now)
+            })
+            error.value = null
+        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+    }
+
     /** The calendar is fixed at season start - fetch once, keep for a week. */
     suspend fun refreshRaces(force: Boolean = false) {
         val age = dao.racesFetchedAt(season)
@@ -97,7 +145,52 @@ class Repo(ctx: Context) {
      *  code disagree (Antonelli lives under K/ but is coded ANDANT01). Pinned. */
     fun headshotKey(driverId: String): String? = HEADSHOTS[driverId]
 
+    /** Ergast circuitId -> MultiViewer circuit key. Spa=7 is confirmed; the rest of
+     *  the 2026 calendar still needs verifying against the MV circuits list, so an
+     *  unknown id returns null and the circuit hero is simply skipped (never wrong). */
+    fun circuitKey(circuitId: String): Int? = CIRCUIT_KEYS[circuitId]
+
+    suspend fun circuit(circuitId: String) = dao.circuit(circuitId)
+
+    /** Static circuit facts not carried by the geometry endpoint (length/laps/top
+     *  speed/elevation). Turns come from the corner count instead. Spa only for now,
+     *  same pinned-data pattern as teamColour/headshotKey. */
+    fun circuitFacts(circuitId: String): CircuitFacts? = when (circuitId) {
+        "spa" -> CircuitFacts(lengthKm = "7.004", laps = 44, topSpeed = "359.7", elevation = "102.2")
+        else -> null
+    }
+
+    /** Geometry is immutable - fetch once, keep forever. Decimated to every 2nd point
+     *  (harder loses La Source and the Bus Stop chicane). Rotation stored, applied at draw.
+     *  Eau Rouge -> Raidillon is derived from corners 2..5, not magic point indices. */
+    suspend fun refreshCircuit(circuitId: String) {
+        if (dao.circuit(circuitId) != null) return
+        val key = circuitKey(circuitId) ?: return
+        runCatching {
+            val c = Net.multiviewer.circuit(key)
+            val xs = c.x.filterIndexed { i, _ -> i % 2 == 0 }
+            val ys = c.y.filterIndexed { i, _ -> i % 2 == 0 }
+            fun nearest(pos: MvPos): Int = xs.indices.minByOrNull { i ->
+                val dx = xs[i] - pos.x; val dy = ys[i] - pos.y; dx * dx + dy * dy
+            } ?: 0
+            fun cornerPos(n: Int) = c.corners.firstOrNull { it.number == n }?.pos
+            val a = cornerPos(2)?.let { nearest(it) } ?: 0
+            val b = cornerPos(5)?.let { nearest(it) } ?: 0
+            dao.putCircuit(CircuitGeometryEntity(
+                circuitId, c.rotation,
+                xs = xs.joinToString(",") { it.toString() },
+                ys = ys.joinToString(",") { it.toString() },
+                corners = c.corners.size,
+                eauStart = minOf(a, b), eauEnd = maxOf(a, b),
+                fetchedAt = System.currentTimeMillis()))
+        }.onFailure { error.value = it.message ?: "Couldn't reach MultiViewer" }
+    }
+
     companion object {
+        /** MultiViewer circuit keys. Spa=7 is verified; extend as the other 2026
+         *  circuitIds are confirmed (same endpoint, swap the key). */
+        private val CIRCUIT_KEYS = mapOf("spa" to 7)
+
         private val HEADSHOTS = mapOf(
             "antonelli" to "K/ANDANT01_Kimi_Antonelli/andant01",
             "russell" to "G/GEORUS01_George_Russell/georus01",
