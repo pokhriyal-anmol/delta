@@ -224,8 +224,13 @@ fun CarbonNumber(number: String, glowColour: Color, modifier: Modifier = Modifie
         glyph.offset(size.width / 2f - b.centerX(), size.height * centerFraction - b.centerY())
         val path = glyph.asComposePath()
 
-        // Team glow behind: a blurred stroke of the glyph outline - wide colour, tight
-        // neutral - so the halo wraps the digits' contour (drop-shadow on the alpha).
+        // 1. Engrave, under everything: same glyph +3dp Y, a hairline of light. The sliver
+        //    peeking below each lower edge reads as light catching a recessed lip.
+        val lip = android.graphics.Path(glyph).apply { offset(0f, 3.dp.toPx()) }
+        drawPath(lip.asComposePath(), color = p.engrave)
+
+        // 2. Team glow behind: a blurred stroke of the glyph outline - wide colour, tight
+        //    neutral - so the halo wraps the digits' contour (drop-shadow on the alpha).
         drawIntoCanvas { canvas ->
             val gp = Paint().asFrameworkPaint().apply {
                 isAntiAlias = true
@@ -240,8 +245,26 @@ fun CarbonNumber(number: String, glowColour: Color, modifier: Modifier = Modifie
             canvas.nativeCanvas.drawPath(glyph, gp)
         }
 
-        // Solid filled glyph, dark carbon - no hollow stroke, no twill. The team glow
-        // behind is what reads; the fill is barely above canvas so it sits back.
-        drawPath(path, color = if (p.isDark) Color(0xFF17171B) else Color(0xFFE6E6E2))
+        // 3. Carbon-fibre fill, clipped to the glyph (port of f1-tab-complete.html .cbD/.cbL):
+        //    dominant 45deg #23232B/#14141A rib + a faint 45deg sheen + a 135deg cross-fibre.
+        clipPath(path) {
+            val h = size.height
+            val period = 6.dp.toPx()   // rib period
+            val fine = 3.dp.toPx()     // sheen / cross period
+            val base = if (p.isDark) Color(0xFF14141A) else Color(0xFFE9E9E5)
+            val rib = if (p.isDark) Color(0xFF23232B) else Color(0xFFDBDBD5)
+            val sheen = if (p.isDark) Color(0x09FFFFFF) else Color(0x07000000)
+            val cross = if (p.isDark) Color(0x12FFFFFF) else Color(0x0E000000)
+            drawRect(base)
+            var i = -h
+            while (i < size.width + h) { drawLine(rib, Offset(i, 0f), Offset(i + h, h), strokeWidth = fine); i += period }
+            var s = -h
+            while (s < size.width + h) { drawLine(sheen, Offset(s, 0f), Offset(s + h, h), strokeWidth = 1.dp.toPx()); s += fine }
+            var j = -h
+            while (j < size.width + h) { drawLine(cross, Offset(j + h, 0f), Offset(j, h), strokeWidth = 1.dp.toPx()); j += fine }
+        }
+
+        // 4. Stroke rides the same path - the lit border that lifts it off the canvas.
+        drawPath(path, color = p.numStroke, style = Stroke(width = 3.dp.toPx()))
     }
 }
