@@ -199,33 +199,33 @@ fun StatBlock(value: String, label: String, modifier: Modifier = Modifier) {
  * than as stripes; on a 3x screen each rib gets 18 physical pixels.
  */
 @Composable
-fun CarbonNumber(number: String, glowColour: Color, modifier: Modifier = Modifier, sizeSp: Float = 186f) {
+fun CarbonNumber(number: String, glowColour: Color, modifier: Modifier = Modifier, centerFraction: Float = 0.64f) {
     val p = LocalPalette.current
     Canvas(modifier) {
-        // Compose's MultiParagraph.getPathForRange returns the SELECTION box of the
-        // text, not the glyph outlines - clipping carbon to it yields a rectangle.
-        // Go to the platform Paint for true outlines, which is what we clip against.
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = sizeSp.sp.toPx()
+        // getPathForRange returns the SELECTION box, not glyph outlines - use platform Paint.
+        // Tight tracking (-0.11em) so the two digits read as one unit ("12", "44"), not two.
+        fun makePaint(sizePx: Float) = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = sizePx
             typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
-            letterSpacing = -0.06f
+            letterSpacing = -0.11f
             textAlign = android.graphics.Paint.Align.CENTER
         }
+        // Size to a TARGET WIDTH (~95% of the hero), not a fixed height: measure at a
+        // reference size then scale. "1" and "44" land at the same visual weight; coerceIn
+        // caps a lone "1" (which would otherwise be absurdly tall) and floors a wide number.
+        val refWidth = makePaint(100.sp.toPx()).measureText(number).coerceAtLeast(1f)
+        val finalSp = (100f * (size.width * 0.95f / refWidth)).coerceIn(160f, 480f)
         val glyph = android.graphics.Path()
-        paint.getTextPath(number, 0, number.length, 0f, 0f, glyph)
+        makePaint(finalSp.sp.toPx()).getTextPath(number, 0, number.length, 0f, 0f, glyph)
         val b = android.graphics.RectF()
         glyph.computeBounds(b, true)
-        glyph.offset(size.width / 2f - b.centerX(), size.height / 2f - b.centerY())
+        // Centre horizontally on the face; vertical centre low (~64%) so the tops bleed up
+        // behind the head and the base drops into the name area (masked by the name-fade).
+        glyph.offset(size.width / 2f - b.centerX(), size.height * centerFraction - b.centerY())
         val path = glyph.asComposePath()
 
-        // 1. Engrave, under everything: same glyph +3dp Y, a hairline of light. The
-        //    sliver peeking below each lower edge is what reads as an engraved recess.
-        val lip = android.graphics.Path(glyph).apply { offset(0f, 3.dp.toPx()) }
-        drawPath(lip.asComposePath(), color = p.engrave)
-
-        // 2. Glow FOLLOWS the glyph, not a circle behind it: a blurred stroke of the
-        //    actual path - wide team-colour, then tight neutral - so the halo wraps the
-        //    digits' contour (drop-shadow-on-alpha, per the reference).
+        // Team glow behind: a blurred stroke of the glyph outline - wide colour, tight
+        // neutral - so the halo wraps the digits' contour (drop-shadow on the alpha).
         drawIntoCanvas { canvas ->
             val gp = Paint().asFrameworkPaint().apply {
                 isAntiAlias = true
@@ -240,37 +240,8 @@ fun CarbonNumber(number: String, glowColour: Color, modifier: Modifier = Modifie
             canvas.nativeCanvas.drawPath(glyph, gp)
         }
 
-        // 3. Carbon fill, clipped to the glyph. Exact port of the reference recipe
-        //    (f1-tab-complete.html .cbD/.cbL): opaque 45deg #23232B/#14141A bands (the
-        //    dominant rib), a faint 45deg sheen, then a 135deg cross-fibre. The sheen
-        //    reinforces the diagonal so the cross reads as weave, not a lattice.
-        clipPath(path) {
-            val h = size.height
-            val period = 6.dp.toPx()   // rib period
-            val fine = 3.dp.toPx()     // sheen / cross period
-            val base = if (p.isDark) Color(0xFF14141A) else Color(0xFFE9E9E5)
-            val rib = if (p.isDark) Color(0xFF23232B) else Color(0xFFDBDBD5)
-            val sheen = if (p.isDark) Color(0x09FFFFFF) else Color(0x07000000)
-            val cross = if (p.isDark) Color(0x12FFFFFF) else Color(0x0E000000)
-            drawRect(base)
-            var i = -h
-            while (i < size.width + h) {                 // 45deg dominant rib (3dp band / 6dp)
-                drawLine(rib, Offset(i, 0f), Offset(i + h, h), strokeWidth = fine)
-                i += period
-            }
-            var s = -h
-            while (s < size.width + h) {                 // 45deg sheen: 1px every 3dp
-                drawLine(sheen, Offset(s, 0f), Offset(s + h, h), strokeWidth = 1.dp.toPx())
-                s += fine
-            }
-            var j = -h
-            while (j < size.width + h) {                 // 135deg cross-fibre: 1px every 3dp
-                drawLine(cross, Offset(j + h, 0f), Offset(j, h), strokeWidth = 1.dp.toPx())
-                j += fine
-            }
-        }
-
-        // 4. Stroke rides the same path.
-        drawPath(path, color = p.numStroke, style = Stroke(width = 3.dp.toPx()))
+        // Solid filled glyph, dark carbon - no hollow stroke, no twill. The team glow
+        // behind is what reads; the fill is barely above canvas so it sits back.
+        drawPath(path, color = if (p.isDark) Color(0xFF17171B) else Color(0xFFE6E6E2))
     }
 }

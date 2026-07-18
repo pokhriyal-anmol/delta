@@ -14,11 +14,13 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import dev.anpo.f1.R
 import dev.anpo.f1.data.*
 import coil.compose.AsyncImage
@@ -328,37 +330,36 @@ fun DriverScreen(repo: Repo, driverId: String) {
         // The figure is lifted (offset) so the name block sits over the FADED tail of
         // the photo, not the solid chest - otherwise the season line is unreadable.
         Box(Modifier.fillMaxWidth().height(520.dp).glow(col)) {
-            // Number runs BIG (250sp) so it spills past the head silhouette on both
-            // sides - that overspill is what reads as "behind the figure", not the
-            // photo's position. Canvas pulled up (top 20dp) to sit above the face.
-            CarbonNumber("${d.number ?: 0}", col,
-                Modifier.fillMaxWidth().height(300.dp).align(Alignment.TopCenter).padding(top = 20.dp),
-                sizeSp = 250f)
+            // The number fills the whole hero, self-sizes to ~95% width, and sits low so
+            // the tops bleed behind the head and the base drops into the name.
+            CarbonNumber("${d.number ?: 0}", col, Modifier.matchParentSize())
             if (key != null) {
-                // The mask goes on a WRAPPER, not on AsyncImage: Coil composites its
-                // painter in its own layer, so a DstIn rect on the image's own modifier
-                // never touches its pixels. As the Box's child, the photo is pulled into
-                // the offscreen layer by drawContent() and the fade actually bites. Square
-                // box so the square headshot fills it with the chest at the box's bottom
-                // (no letterbox), then the whole thing is masked and lifted 90dp.
-                Box(Modifier.size(300.dp).align(Alignment.BottomCenter)
-                    .offset(y = (-90).dp).fadeBottom()) {
-                    // Original colour. Team identity comes from the surroundings, not the person.
-                    AsyncImage(
-                        model = Net.headshot(key), contentDescription = "${d.given} ${d.family}",
-                        contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()
-                    )
-                }
+                // OPAQUE - no per-photo fade. The photo must fully occlude the number
+                // behind it, or the number bleeds through the translucent suit and reads
+                // as a low-opacity overlay ON the driver. The bottom is dissolved by the
+                // name-fade below instead. Square box: chest sits at the box's bottom.
+                AsyncImage(
+                    model = Net.headshot(key), contentDescription = "${d.given} ${d.family}",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(300.dp).align(Alignment.BottomCenter).offset(y = (-90).dp)
+                )
             }
-            // Pinned to ~46% of the hero (not centre, which is mid-torso in a 520dp
-            // box) so POS/PTS sit at the shoulder line, flanking the face.
-            Column(Modifier.align(BiasAlignment(-1f, -0.08f)).padding(start = 14.dp).wrapContentWidth(),
+            // Name-fade: dissolves BOTH the photo's bottom edge and the number's base into
+            // the canvas. The canvas plateau (from ~55%) fully covers the number where it
+            // sits behind the lower figure; the fade-in blends the driver's chest. This is
+            // the single bottom dissolve - it replaces the photo's own DstIn mask.
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(210.dp)
+                .background(Brush.verticalGradient(0f to Color.Transparent, 0.55f to p.canvas, 1f to p.canvas)))
+            // Pinned to ~46% of the hero (relative to the Box, NOT the number) so they
+            // stay at the shoulder line when the number drops. zIndex keeps them above
+            // the carbon, which now reaches up into this band.
+            Column(Modifier.align(BiasAlignment(-1f, -0.08f)).zIndex(1f).padding(start = 14.dp).wrapContentWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("%02d".format(d.position), style = F1Type.display.copy(color = p.txt, fontSize = 42.sp),
                     maxLines = 1, softWrap = false)
                 Text("POS", style = F1Type.label.copy(color = p.sec))
             }
-            Column(Modifier.align(BiasAlignment(1f, -0.08f)).padding(end = 14.dp).wrapContentWidth(),
+            Column(Modifier.align(BiasAlignment(1f, -0.08f)).zIndex(1f).padding(end = 14.dp).wrapContentWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("${d.points}", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp),
                     maxLines = 1, softWrap = false)
@@ -504,8 +505,7 @@ fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
 
     Column(Modifier.fillMaxSize().background(p.canvas).verticalScroll(rememberScrollState())) {
         Box(Modifier.fillMaxWidth().height(430.dp).glow(col)) {
-            CarbonNumber("%02d".format(position), col,
-                Modifier.fillMaxWidth().height(250.dp).align(Alignment.TopCenter).padding(top = 24.dp), sizeSp = 200f)
+            CarbonNumber("%02d".format(position), col, Modifier.matchParentSize())
             // Both drivers, overlapping slightly, tappable through to their pages.
             Row(Modifier.align(Alignment.TopCenter).padding(top = 128.dp)) {
                 teamDrivers.forEachIndexed { i, dr ->
@@ -530,12 +530,15 @@ fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
                     }
                 }
             }
-            Column(Modifier.align(BiasAlignment(-1f, -0.15f)).padding(start = 14.dp).wrapContentWidth(),
+            // Name-fade: dissolve the position number's base into the constructor name.
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(120.dp)
+                .background(Brush.verticalGradient(listOf(Color.Transparent, p.canvas))))
+            Column(Modifier.align(BiasAlignment(-1f, -0.15f)).zIndex(1f).padding(start = 14.dp).wrapContentWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("${team.points}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
                 Text("PTS", style = F1Type.label.copy(color = p.sec))
             }
-            Column(Modifier.align(BiasAlignment(1f, -0.15f)).padding(end = 14.dp).wrapContentWidth(),
+            Column(Modifier.align(BiasAlignment(1f, -0.15f)).zIndex(1f).padding(end = 14.dp).wrapContentWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("${info.champs}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
                 Text("TITLES", style = F1Type.label.copy(color = p.sec))
