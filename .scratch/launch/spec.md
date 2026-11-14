@@ -1,6 +1,6 @@
 # Launch plan: open source, coffee page, Play Store, Reddit
 
-Status: approved 2026-11-14. L1 and L2 are built and tested, not yet committed. L0 items for the owner: trademark search, email decision, keystore backup, and the Buy Me a Coffee URL for `supportUrl` in `gradle.properties`. Written after v1.3.0.
+Status: approved 2026-11-14. L1 and L2 are done and released as v1.3.1 (commit bb3a6b9). `supportUrl` is set to the owner's Buy Me a Coffee page. L0 items still with the owner: trademark search, email decision, keystore backup. Written after v1.3.0.
 
 ## Decisions already made
 
