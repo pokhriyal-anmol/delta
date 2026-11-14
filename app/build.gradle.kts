@@ -36,11 +36,11 @@ if (!hasReleaseKeystore) {
 }
 
 android {
-    namespace = "io.github.pokhriyal_anmol.f1"
+    namespace = "dev.anpo.f1"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.github.pokhriyal_anmol.f1"
+        applicationId = "dev.anpo.f1"
         minSdk = 26
         targetSdk = 34
         versionCode = 4
