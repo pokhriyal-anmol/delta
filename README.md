@@ -3,8 +3,8 @@
 A Formula 1 tracker for Android. Standings, drivers, teams, the race calendar and a 3D track,
 from free public data. Sideloaded, one user, no server, no background work.
 
-Latest release: v1.1.2. V2 (three tabs: Home, Championship, News) is in progress and
-planned in `.scratch/f1-v2/spec.md`; slices S0 to S4 are done, unreleased.
+Latest release: v1.2.0 (V2 slices S0 to S4 and the race reminder; News is still a placeholder). V2 is
+planned in `.scratch/f1-v2/spec.md`.
 
 ## Build it
 
