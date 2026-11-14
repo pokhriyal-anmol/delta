@@ -39,7 +39,7 @@ was the only inbound surface in the system. Tasks is gone, so the surface is zer
 | 1 | Plaintext traffic / café-wifi MITM | `usesCleartextTraffic=false` **and** a network security config denying cleartext. No HTTP can leave this app. | `AndroidManifest.xml`, `network_security_config.xml` |
 | 2 | MITM via a proxy cert | `<certificates src="system"/>` only — **user-installed CAs are not trusted**. Blocks Burp/mitmproxy-style interception on a compromised device. | `network_security_config.xml` |
 | 3 | Another app reading your data | Zero exported components except the launcher activity. No content providers, no exported services/receivers. `InitializationProvider` removed. | `AndroidManifest.xml` |
-| 4 | Over-permissioning | Two permissions total: `INTERNET`, `ACCESS_NETWORK_STATE`. No storage, location, contacts, camera, mic. | `AndroidManifest.xml` |
+| 4 | Over-permissioning | Four permissions total: `INTERNET`, `ACCESS_NETWORK_STATE`, `POST_NOTIFICATIONS` and `USE_EXACT_ALARM` (the one race reminder, an hour before lights out). No storage, location, contacts, camera, mic. | `AndroidManifest.xml` |
 | 5 | Cache leaking to Google's cloud | `allowBackup=false` + explicit exclusion of `feeds.db` (results cache and news) from cloud backup and device transfer. | `backup_rules.xml`, `data_extraction_rules.xml` |
 | 6 | Reverse-engineering the APK | R8 shrink + obfuscate on release. | `app/build.gradle.kts` |
 | 7 | Secrets in the binary | There are none. Jolpica, MultiViewer, F1's CDN and the RSS feeds need no auth. Nothing to steal. | — |

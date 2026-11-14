@@ -86,7 +86,7 @@ happened" alerts need polling or a push server, and are banned.
 | F-27 | Team radio | Cut | OpenF1 reports almost no radio data in 2026 |
 | F-30 to F-36 | Live timing over SignalR, foreground only | Later | See `architecture.md` section 3 |
 | F-40, F-41 | Telemetry traces, track position replay | Later | |
-| F-45 | Race and qualifying start reminders | Later | Allowed under the notification rule |
+| F-45 | Race and qualifying start reminders | Built (race only) | One notification an hour before lights out; tap the line on Home to turn it on or off. Qualifying is not covered |
 
 ## 7. Cross-cutting
 

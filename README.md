@@ -27,6 +27,7 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 - Circuit: the 3D track, derived length, laps, turns and the winner of every race held there
 - Race weekend: track, derived length, laps, turns and local-time sessions for any circuit that has an outline
 - Three tabs, each with its own back stack: Home, Championship, News (a placeholder)
+- Race reminder: one notification an hour before lights out. The line under the countdown on Home says "reminder on" or "reminder off" and a tap toggles it
 - After the final race Home shows "Season complete" instead of a countdown
 - Light and dark follow the phone
 

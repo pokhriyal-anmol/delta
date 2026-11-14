@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The ONLY permission. No storage, no location, no contacts, no camera.
+    <!-- Four permissions. No storage, no location, no contacts, no camera.
+         POST_NOTIFICATIONS and USE_EXACT_ALARM are for the one race reminder an hour before lights out.
+         Neither runs anything in the background: the OS holds one timestamp and wakes the receiver once.
          Notably absent: no INTERNET *server* capability exists on Android at all -
          an app cannot listen for inbound connections without explicitly binding a
          socket. This app never does. There is no port to scan. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="false"
@@ -31,6 +35,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Not exported: only the alarm this app sets can reach it. -->
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
 
         <!-- Kill the default init providers. Fewer components = smaller surface. -->
         <provider

@@ -1,6 +1,10 @@
 package io.github.pokhriyal_anmol.f1.ui
 
 import androidx.compose.foundation.*
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.semantics.Role
@@ -47,6 +51,21 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
 
     var geo by remember(next?.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
     LaunchedEffect(next?.circuitId) { next?.let { repo.refreshCircuit(it.circuitId, it.season.toInt()); geo = repo.circuit(it.circuitId) } }
+
+    val ctx = LocalContext.current
+    var wanted by remember { mutableStateOf(Reminders.enabled(ctx)) }
+    var allowed by remember { mutableStateOf(Reminders.canNotify(ctx)) }
+    val reminderOn = wanted && allowed
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        allowed = ok; wanted = ok; Reminders.setEnabled(ctx, ok)
+    }
+    // The text says "reminder on" by default, so ask for notifications once, the first time the next race shows.
+    LaunchedEffect(next?.id) {
+        if (next != null && wanted && !allowed && !Reminders.asked(ctx)) { Reminders.markAsked(ctx); ask.launch(Manifest.permission.POST_NOTIFICATIONS) }
+    }
+    LaunchedEffect(next?.id, reminderOn) {
+        if (next != null && reminderOn) Reminders.schedule(ctx, next.name, raceInstant(next)?.toEpochMilli()) else Reminders.cancel(ctx)
+    }
     if (races.isEmpty()) return   // nothing is drawn until the calendar arrives, as before
 
     LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
@@ -85,14 +104,21 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                             CountBlock("%02d".format(d.toHours() % 24), "HOURS")
                             CountBlock("%02d".format(d.toMinutes() % 60), "MINS")
                         }
-                        Spacer(Modifier.height(15.dp))
-                        Text("Lights out ${next.date} · reminder on", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
+                        Spacer(Modifier.height(5.dp))
+                        // The padding gives a tap area; the spacer above and the Drivers row below give back the same height.
+                        Text("Lights out ${next.date} · reminder ${if (reminderOn) "on" else "off"}",
+                            style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp),
+                            modifier = Modifier.clickable(role = Role.Switch, onClickLabel = "Race reminder") {
+                                if (reminderOn) { wanted = false; Reminders.setEnabled(ctx, false) }
+                                else if (!allowed) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                else { wanted = true; Reminders.setEnabled(ctx, true) }
+                            }.padding(vertical = 10.dp))
                     } else if (races.isNotEmpty()) SeasonComplete(races, onCalendar)
                 }
             }
         }
         item {
-            Row(Modifier.fillMaxWidth().padding(F1Dim.screenPad).padding(top = 12.dp),
+            Row(Modifier.fillMaxWidth().padding(F1Dim.screenPad).padding(top = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Text("Drivers", style = F1Type.section.copy(color = p.txt))
                 Text("View all", style = F1Type.meta.copy(color = p.accent, fontSize = 12.sp),
