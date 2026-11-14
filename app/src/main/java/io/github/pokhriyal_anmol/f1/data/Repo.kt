@@ -2,6 +2,7 @@ package io.github.pokhriyal_anmol.f1.data
 
 import android.content.Context
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Static constructor facts (name/base/power unit/history) not in the standings API. */
@@ -206,6 +207,52 @@ class Repo(ctx: Context) {
      * Final standings for a past season, one request per table, kept forever. Both tables are fetched
      * together so the toggle never waits. There is no constructors' table before 1958.
      */
+    fun seasonResults(): Flow<List<RaceResultEntity>> = dao.seasonResults()
+    fun career(kind: Int, id: String): Flow<CareerEntity?> = dao.career(careerKey(kind, id))
+    fun history(kind: Int, id: String): Flow<List<ArchiveStandingEntity>> = dao.history(kind, id)
+
+    /** Totals for one driver (five requests) or team (four). Refreshed weekly while they are active. */
+    suspend fun refreshCareer(kind: Int, id: String) {
+        val key = careerKey(kind, id)
+        val old = dao.career(key).firstOrNull()
+        if (old != null && System.currentTimeMillis() - old.fetchedAt < 7 * DAY) return
+        val scope = careerScope(kind)
+        runCatching {
+            suspend fun total(call: suspend () -> JolpicaEnvelope): Int { limiter.acquire(); return call().data.total?.toIntOrNull() ?: 0 }
+            val wins = total { Net.jolpica.careerResults(scope, id, 1) }
+            val second = total { Net.jolpica.careerResults(scope, id, 2) }
+            val third = total { Net.jolpica.careerResults(scope, id, 3) }
+            // Qualifying results start in 1994 (Ferrari shows 126 against its real 250 or so), so only drivers get poles.
+            val poles = if (kind == KIND_DRIVER) total { Net.jolpica.careerPoles(scope, id) } else 0
+            limiter.acquire()
+            val years = Net.jolpica.careerSeasons(scope, id).data.seasonTable?.seasons.orEmpty().joinToString(",") { it.season }
+            dao.putCareer(CareerEntity(key, wins, wins + second + third, poles, years, System.currentTimeMillis()))
+            error.value = null
+        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+    }
+
+    /** Fetches the final tables this career is missing, one request each, then keeps them for good. */
+    suspend fun refreshHistory(kind: Int, id: String) {
+        val career = careerSeasons(dao.career(careerKey(kind, id)).firstOrNull())
+        val have = dao.history(kind, id).firstOrNull().orEmpty().map { it.season.toInt() }.toSet()
+        val currentYear = dao.currentSeason()?.toIntOrNull()
+        runCatching {
+            // Rows are kept per season, so "have" must mean the season is saved, not that this entity is in it.
+            missingSeasons(kind, career, have, currentYear).filter { dao.archiveCount(it.toString(), kind) == 0 }.forEach { fetchTable(it.toString(), kind) }
+            error.value = null
+        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+    }
+
+    private suspend fun fetchTable(season: String, kind: Int) {
+        limiter.acquire()
+        val now = System.currentTimeMillis()
+        if (kind == KIND_DRIVER) {
+            Net.jolpica.driverStandings(season, 100).data.standings?.lists?.firstOrNull()?.let { dao.putArchive(driverArchive(it, now)) }
+        } else {
+            Net.jolpica.constructorStandings(season, 100).data.standings?.lists?.firstOrNull()?.let { dao.putArchive(teamArchive(it, now)) }
+        }
+    }
+
     suspend fun refreshArchive(season: String) {
         val year = season.toIntOrNull() ?: return
         runCatching {

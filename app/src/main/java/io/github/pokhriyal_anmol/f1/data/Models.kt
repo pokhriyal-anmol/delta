@@ -11,7 +11,10 @@ import kotlinx.serialization.Serializable
     val total: String? = null,
     @SerialName("StandingsTable") val standings: StandingsTable? = null,
     @SerialName("RaceTable") val races: RaceTable? = null,
+    @SerialName("SeasonTable") val seasonTable: SeasonTable? = null,
 )
+@Serializable data class SeasonTable(@SerialName("Seasons") val seasons: List<JSeason> = emptyList())
+@Serializable data class JSeason(val season: String)
 @Serializable data class StandingsTable(val season: String? = null, val round: String? = null,
     @SerialName("StandingsLists") val lists: List<StandingsList> = emptyList())
 @Serializable data class StandingsList(val season: String, val round: String,
@@ -121,6 +124,17 @@ data class RaceResultEntity(
     val position: Int, val positionText: String,
     val driverName: String, val code: String?, val teamId: String, val teamName: String,
     val grid: Int, val laps: Int, val status: String, val time: String?, val points: Double,
+)
+
+/**
+ * A driver's or team's career totals. key is "d:" or "t:" plus the id. seasons is the
+ * comma-separated list of years they took part in. Wins, podiums and poles are counts of results rows, so a
+ * team's podiums count each car.
+ */
+@Entity(tableName = "career")
+data class CareerEntity(
+    @PrimaryKey val key: String, val wins: Int, val podiums: Int, val poles: Int,
+    val seasons: String, val fetchedAt: Long,
 )
 
 /** Who won each past race at a circuit. Kept once fetched, since history does not change. */

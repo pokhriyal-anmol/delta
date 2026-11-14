@@ -345,7 +345,7 @@ private fun DriverRow(repo: Repo, s: DriverStandingEntity, onClick: (String) -> 
 }
 
 @Composable
-fun DriverScreen(repo: Repo, driverId: String) {
+fun DriverScreen(repo: Repo, driverId: String, onTeam: (String) -> Unit, onRace: (Int) -> Unit) {
     val p = LocalPalette.current
     var s by remember { mutableStateOf<DriverStandingEntity?>(null) }
     var stat by remember { mutableStateOf<DriverSeasonStat?>(null) }
@@ -421,7 +421,7 @@ fun DriverScreen(repo: Repo, driverId: String) {
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 13.dp))
             PointsByRound(csv, col)
         }
-        Spacer(Modifier.height(24.dp))
+        DriverDepth(repo, d, onTeam, onRace)
     }
 }
 
@@ -429,7 +429,7 @@ fun DriverScreen(repo: Repo, driverId: String) {
  *  height and opacity both scaled by value so a big haul reads loud and a blank reads
  *  faint. Zero-point rounds still get a hairline so the round grid stays legible. */
 @Composable
-private fun PointsByRound(csv: String, col: Color) {
+internal fun PointsByRound(csv: String, col: Color) {
     val p = LocalPalette.current
     val pts = csv.split(",").map { it.toIntOrNull() ?: 0 }
     if (pts.isEmpty()) return
@@ -607,7 +607,7 @@ fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
                 MetaRow("Constructors' titles", "${info.champs}", last = true)
             }
         }
-        Spacer(Modifier.height(140.dp))
+        TeamDepth(repo, team, col)
     }
 }
 

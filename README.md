@@ -4,7 +4,7 @@ A Formula 1 tracker for Android. Standings, drivers, teams, the race calendar an
 from free public data. Sideloaded, one user, no server, no background work.
 
 Latest release: v1.1.2. V2 (three tabs: Home, Championship, News) is in progress and
-planned in `.scratch/f1-v2/spec.md`; slices S0 to S3 are done, unreleased.
+planned in `.scratch/f1-v2/spec.md`; slices S0 to S4 are done, unreleased.
 
 ## Build it
 
@@ -20,8 +20,8 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 
 - Home: next race from the real calendar with a live countdown, driver standings, team tiles, the next circuit in 3D
 - Championship: Drivers and Constructors tables with a season selector back to 1950 and a champion marker; tap a row to open the driver or team
-- Driver: carbon race number, team-colour glow, real headshot, season stats, points by round
-- Constructor: both drivers, season stats, team facts
+- Driver: carbon race number, team-colour glow, real headshot, season stats, points by round, a link to the team, career totals, teammate head-to-head, recent results and season history
+- Constructor: both drivers, season stats, team facts, points by round, career totals and season history
 - Calendar: every round of the season; tap a round for its result, its weekend or its circuit
 - Race result: the full classification for any finished round, laps down and retirements included
 - Circuit: the 3D track, derived length, laps, turns and the winner of every race held there
@@ -35,7 +35,7 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 
 All of this is in the V2 spec with the evidence behind it.
 
-- No history on driver or team pages yet, and race results exist for the current season only
+- Race results exist for the current season only, and a retired driver in an old table does not open
 - News is a placeholder until the feed list lands
 
 ## Using the emulator from the Claude desktop app

@@ -24,8 +24,8 @@ happened" alerts need polling or a push server, and are banned.
 | Home | Race result | Built |
 | Home | Circuit | Built |
 | Championship | World Championship (Drivers and Constructors toggle, season selector) | Built |
-| Championship | Driver | Built, deepened in V2 S4 |
-| Championship | Team | Built, deepened in V2 S4 |
+| Championship | Driver | Built, with career, history and teammate |
+| Championship | Team | Built, with points by round, career and history |
 | News | News list | V2 S5, a placeholder screen until then |
 
 ## 2. Core results (Jolpica only)
@@ -47,9 +47,9 @@ happened" alerts need polling or a push server, and are banned.
 | ID | Feature | Status | Notes |
 |---|---|---|---|
 | F-10 | Lap-by-lap position chart | Later | Best effort to payoff of the heavy features |
-| F-11 | Teammate head-to-head, race and qualifying | V2 S4 | Pure computation over cached rows |
-| F-12 | Driver career stats and season history | V2 S4 | 4 requests per driver for totals, 1 per season for history |
-| F-13 | Team history and titles | V2 S4 | |
+| F-11 | Teammate head-to-head | Built | Race finish and starting slot (qualifying results are not used). Zero requests |
+| F-12 | Driver career stats and season history | Built | 5 requests for totals, 1 per season for history, loaded on a tap |
+| F-13 | Team history | Built | Wins, podiums, season history. No poles before 1994 data |
 | F-14 | Circuit page with past winners | Built | One request per circuit, kept forever |
 | F-15 | Season comparison and records | Later | |
 

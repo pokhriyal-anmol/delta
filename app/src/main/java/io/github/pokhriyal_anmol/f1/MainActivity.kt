@@ -90,12 +90,6 @@ class MainActivity : ComponentActivity() {
                                     onWeekend = { nav.navigate("home/weekend") },
                                     onCircuit = { nav.navigate("home/circuit/$it") })
                             }
-                            composable("home/race/{round}") { e ->
-                                ResultScreen(repo, e.arguments?.getString("round")?.toIntOrNull() ?: 0,
-                                    onDriver = { nav.navigate("home/driver/$it") },
-                                    onCircuit = { nav.navigate("home/circuit/$it") })
-                            }
-                            composable("home/circuit/{id}") { e -> CircuitScreen(repo, e.arguments?.getString("id").orEmpty()) }
                             details("home", nav, repo)
                         }
                         navigation(startDestination = Tab.Championship.start, route = Tab.Championship.graph) {
@@ -144,8 +138,16 @@ class MainActivity : ComponentActivity() {
 /** Per-tab detail pages. The prefix keeps one tab's driver page a different back-stack entry from another's. */
 private fun NavGraphBuilder.details(prefix: String, nav: NavController, repo: Repo) {
     composable("$prefix/driver/{id}") { e ->
-        DriverScreen(repo, e.arguments?.getString("id").orEmpty())
+        DriverScreen(repo, e.arguments?.getString("id").orEmpty(),
+            onTeam = { nav.navigate("$prefix/constructor/$it") },
+            onRace = { nav.navigate("$prefix/race/$it") })
     }
+    composable("$prefix/race/{round}") { e ->
+        ResultScreen(repo, e.arguments?.getString("round")?.toIntOrNull() ?: 0,
+            onDriver = { nav.navigate("$prefix/driver/$it") },
+            onCircuit = { nav.navigate("$prefix/circuit/$it") })
+    }
+    composable("$prefix/circuit/{id}") { e -> CircuitScreen(repo, e.arguments?.getString("id").orEmpty()) }
     composable("$prefix/constructor/{id}") { e ->
         ConstructorScreen(repo, e.arguments?.getString("id").orEmpty(),
             onDriver = { nav.navigate("$prefix/driver/$it") })

@@ -30,6 +30,17 @@ interface JolpicaApi {
     @GET("ergast/f1/circuits/{id}/results/1/")
     suspend fun circuitWinners(@Path("id") circuitId: String, @Query("limit") limit: Int = 100): JolpicaEnvelope
 
+    /** Total number of results rows at one finishing position (read `total`, limit 1). scope is "drivers" or "constructors". */
+    @GET("ergast/f1/{scope}/{id}/results/{pos}/")
+    suspend fun careerResults(@Path("scope") scope: String, @Path("id") id: String, @Path("pos") pos: Int,
+        @Query("limit") limit: Int = 1): JolpicaEnvelope
+
+    @GET("ergast/f1/{scope}/{id}/qualifying/1/")
+    suspend fun careerPoles(@Path("scope") scope: String, @Path("id") id: String, @Query("limit") limit: Int = 1): JolpicaEnvelope
+
+    @GET("ergast/f1/{scope}/{id}/seasons/")
+    suspend fun careerSeasons(@Path("scope") scope: String, @Path("id") id: String, @Query("limit") limit: Int = 100): JolpicaEnvelope
+
     @GET("ergast/f1/{season}/results/")
     suspend fun seasonResults(@Path("season") season: String,
         @Query("limit") limit: Int = 100, @Query("offset") offset: Int = 0): JolpicaEnvelope

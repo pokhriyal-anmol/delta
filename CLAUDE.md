@@ -79,7 +79,7 @@ differences and the chosen source set are in the spec. Feeds are untrusted input
 
 ## Current state (V2 in progress, 2026-11-14)
 
-S0 to S3 of the V2 spec are done and uncommitted. S0: three tabs (Home, Championship, News) each with its
+S0 to S3 of the V2 spec are committed. The reminder is committed too. S4 is done and uncommitted. S0: three tabs (Home, Championship, News) each with its
 own back stack, season read from Jolpica's `current` alias, a season-complete Home. News is a
 placeholder until S5. S2: the Championship tab is the real page, with a Drivers and Constructors
 toggle, a season selector back to 1950 (past seasons fetched once, kept forever) and a champion
@@ -91,7 +91,7 @@ lap counts and real session times in local time for any race, and the Eau Rouge 
 Madring and Sepang have no outline and show a plain message.
 
 Still broken, all tracked in the spec with evidence:
-- Driver and team pages have no history (S4), so a retired driver in an old table does not open.
+- A retired driver or team in an old Championship table does not open a page (pages are built from the current season).
 - Pull to refresh is deferred: it needs Material 3 1.3, a Compose BOM bump.
 
 Decisions: Lead and wire is the News layout, light-mode grey contrast is left as it is, and no

@@ -21,6 +21,11 @@ import kotlinx.coroutines.flow.Flow
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCircuitFact(x: CircuitFactEntity)
     @Query("SELECT * FROM race_result WHERE season = :s AND round = :r ORDER BY position, grid") fun raceResult(s: String, r: Int): Flow<List<RaceResultEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putRaceResults(x: List<RaceResultEntity>)
+    @Query("SELECT * FROM race_result WHERE season = (SELECT MAX(season) FROM race_result) ORDER BY round") fun seasonResults(): Flow<List<RaceResultEntity>>
+    @Query("SELECT * FROM career WHERE `key` = :key LIMIT 1") fun career(key: String): Flow<CareerEntity?>
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putCareer(x: CareerEntity)
+    @Query("SELECT * FROM archive_standing WHERE kind = :kind AND entityId = :id ORDER BY season DESC") fun history(kind: Int, id: String): Flow<List<ArchiveStandingEntity>>
+    @Query("SELECT MAX(season) FROM race") suspend fun currentSeason(): String?
     @Query("SELECT * FROM circuit_winner WHERE circuitId = :id ORDER BY season DESC") fun winners(id: String): Flow<List<CircuitWinnerEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putWinners(x: List<CircuitWinnerEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun putDrivers(x: List<DriverStandingEntity>)
@@ -35,8 +40,8 @@ import kotlinx.coroutines.flow.Flow
 @Database(
     entities = [DriverStandingEntity::class, ConstructorStandingEntity::class, RaceEntity::class,
         DriverSeasonStat::class, CircuitGeometryEntity::class, CircuitFactEntity::class, ArchiveStandingEntity::class,
-        RaceResultEntity::class, CircuitWinnerEntity::class],
-    version = 8, exportSchema = false
+        RaceResultEntity::class, CircuitWinnerEntity::class, CareerEntity::class],
+    version = 9, exportSchema = false
 )
 abstract class FeedsDb : RoomDatabase() {
     abstract fun dao(): F1Dao

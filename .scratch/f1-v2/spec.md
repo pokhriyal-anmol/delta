@@ -1,6 +1,6 @@
 # f1-v2: Delta becomes an F1-only app with three tabs
 
-Status: APPROVED 2026-11-14. In progress: S0 to S3 done, S4 next (see Progress). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
+Status: APPROVED 2026-11-14. In progress: S0 to S4 done, S5 next (see Progress). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
 
 ## What changes
 
@@ -250,7 +250,8 @@ Closed after the variants and the contrast finding:
 | S1 | Done 2026-11-14, uncommitted | 21 circuit keys, Eau Rouge Spa-only, real session times in local time, derived length, real lap counts, Weekend for every circuit. Closes gaps 2 to 5 |
 | S2 | Done 2026-11-14, uncommitted | Championship page: Drivers and Constructors toggle, season selector back to 1950, archive data layer, champion marker from final standings. Closes gap 8 |
 | S3 | Done 2026-11-14, uncommitted | Race result page, tappable Calendar rows, Circuit page with past winners. Closes gaps 6 and 7 |
-| S4 to S6 | Not started | S4 (driver and team depth) is next |
+| S4 | Done 2026-11-14, uncommitted | Driver and team depth: team and driver links, career totals, season history, teammate head-to-head, recent results, team points by round. Closes gap 9 |
+| S5 to S6 | Not started | S5 (News) is next |
 
 S0 verification, on the Pixel 6 emulator, dark and light:
 
@@ -291,6 +292,16 @@ S3 verification and deviations:
 - Results are stored from the daily season download, so a race that finished today can take until the next daily refresh to appear. The page says so.
 - Race Weekend gained a "›" and a tap on the circuit name. Its spacing is unchanged from v1.1.2 (checked against the old screenshot: name and date sit at the same pixel rows).
 - Not exercised: a result page on a sprint weekend, and the Circuit page when the network is down.
+
+S4 verification and deviations:
+
+- Emulator, dark and light, screenshots 14 (driver page, lower half) and 15 (team page, lower half). Driver page gained: a Team link, Career (wins, podiums, poles, titles), Against your teammate, Recent results (each opens its race, Back returns to the same place) and Seasons. Team page gained: points by round, Career and Seasons.
+- Checked against known history. Hamilton: 106 wins, 120 poles, 7 titles, with the champion marker on 2008, 2014, 2015, 2017, 2018, 2019 and 2020, and 2021 as P2 with 387.5 points. Ferrari: 251 wins. 31 unit tests pass (8 new). Reversing the finish comparison made the head-to-head test fail on the intended line.
+- **Titles need the full history.** The only way to count titles is each season's final table, one request per season. The history is loaded on a tap ("Load 19 more seasons") so it never spends the Jolpica budget unasked, and the Titles tile appears once every past season is saved. Hamilton cost 19 requests, once, kept forever. A team with a long history (Ferrari, 68 seasons) says "one request each" on the button. The rate limiter paces them.
+- **Poles are for drivers only.** Jolpica's qualifying results start in 1994, so Ferrari showed 126 poles against about 250 real ones. Teams show wins and podiums only. A driver whose career began before 1994 would be under-counted the same way, and none of the current drivers is one.
+- **Head-to-head uses the starting slot, not qualifying.** It costs no requests, since it reads the race results already saved. Starting slot is after penalties, so the card says it stands in for qualifying. A retirement loses to a classified finish, and two retirements settle nothing.
+- **Still open:** a retired driver in an old Championship table does not open a page, because the page is built from the current season's standings. That needs a separate lighter page and is not in this slice. The "Points by round" chart wraps two-digit round numbers on its x axis ("1 0"); it is shared with the driver page and was already like that.
+- A scroll-restore defect appeared again on these pages (Back from a race reset the driver page to the top). They reserve a tall minimum height for 400 ms while their sections load.
 
 ## Not doing
 
