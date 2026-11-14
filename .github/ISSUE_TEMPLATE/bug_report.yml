@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in Delta is wrong or broken
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Delta does no background work and has no live timing by design, so "it did not notify me" or
+        "it is not live" are known limits and not bugs. See the README.
+  - type: input
+    id: version
+    attributes:
+      label: Delta version
+      description: The release you installed, for example v1.3.1
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone and Android version
+      placeholder: Pixel 8, Android 15
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include a screenshot if it is a visual problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Championship
+        2. Pick 1988
+        3. ...
