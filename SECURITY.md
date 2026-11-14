@@ -1,110 +1,80 @@
-# Security — the honest version
+# Security policy
 
-You said: *"high security, I don't want hackers scraping the internet getting access to my phone."*
+## Reporting a vulnerability
 
-That specific fear doesn't apply to this app, and understanding **why** is more useful than
-any checklist — because it tells you which risks are real and which are theatre.
+Please report security issues privately through
+[GitHub's private vulnerability reporting](https://github.com/pokhriyal-anmol/delta/security/advisories/new)
+and do not open a public issue. Expect a first reply within a week. Delta is a hobby project
+maintained by one person, so fixes are best effort, but a real vulnerability gets priority over
+feature work.
 
----
+Only the latest release is supported.
 
-## Why "hackers scraping the internet" cannot reach this app
+## Why the app has a small attack surface
 
-Scanning finds things that **listen**. Shodan, mass port scans, botnets — they work by
-connecting to open ports on reachable IPs.
+Scanning tools such as Shodan and mass port scans find things that listen. Delta never listens.
+It has no server, no open port and no bound socket. It makes outbound HTTPS requests to
+`api.jolpi.ca` (results), `api.multiviewer.app` (circuit outlines), `media.formula1.com` (driver
+photos and car images) and the hosts of the news feeds listed in
+[docs/v2-spec.md](docs/v2-spec.md), and reads the replies. That is the whole network surface.
 
-This app **never listens**. It has no server, no open port, no bound socket, no DNS record,
-no public IP. It makes outbound HTTPS requests to `api.jolpi.ca` (results), `api.multiviewer.app` (track
-outlines), `media.formula1.com` (driver photos and 2026 car images) and the news publishers' feed and image hosts
-(listed in `.scratch/f1-v2/spec.md`), and reads the replies. That's the entire network surface.
+An outbound-only client cannot be addressed from the internet. This is a property of the design
+and cannot be misconfigured away.
 
-An outbound-only client is not addressable from the internet. There is nothing to scan. Your
-phone is also behind carrier CGNAT or your home router's NAT, so even if the app *did* listen,
-there'd be no route to it from outside.
+## What the app does about it
 
-**This is a structural property, not a setting.** It can't be misconfigured away. It's why the
-local-first, no-server architecture is a security decision as much as a data-ownership one:
-the server you never built is the server nobody can attack.
+| Risk | Mitigation | Where |
+|---|---|---|
+| Plaintext traffic | `usesCleartextTraffic=false` and a network security config that denies cleartext. No HTTP can leave the app | `AndroidManifest.xml`, `network_security_config.xml` |
+| Interception with an installed certificate | Only system CAs are trusted. User-installed CAs are not | `network_security_config.xml` |
+| Another app reading Delta's data | No exported components except the launcher activity, no content providers, `InitializationProvider` removed | `AndroidManifest.xml` |
+| Over-permissioning | Four permissions: `INTERNET`, `ACCESS_NETWORK_STATE`, `POST_NOTIFICATIONS` and `USE_EXACT_ALARM` (the one race reminder). No storage, location, contacts, camera or microphone | `AndroidManifest.xml` |
+| Cache leaking into cloud backup | `allowBackup=false` and `feeds.db` excluded from backup and device transfer | `backup_rules.xml`, `data_extraction_rules.xml` |
+| Reverse engineering | R8 shrinking and obfuscation on release builds | `app/build.gradle.kts` |
+| Secrets in the binary | None. Every service Delta calls needs no key | n/a |
+| URLs in logcat | No logging interceptor | `data/Api.kt` |
+| Third-party SDKs | None. No analytics, crash reporting or ads. Dependencies come from Google, Square and JetBrains | `app/build.gradle.kts` |
 
-## Nothing listens, anywhere
+### Certificate pinning is deliberately off
 
-There is no second app and no peer sync. The earlier plan had Syncthing for a Tasks tab, which
-was the only inbound surface in the system. Tasks is gone, so the surface is zero.
+The config has a `<pin-set>` block, commented out. Pinning is the one control here that can
+brick an app: a host rotates its certificate (Let's Encrypt does every 90 days), every request
+fails and the fix is a new APK. Trusting only system CAs already blocks the realistic attack, a
+proxy certificate on a compromised device. Pinning defends against a compromised public CA, which
+is a poor trade for public F1 data.
 
----
+## Untrusted input
 
-## What's actually in this project
+Feeds and API replies are the one place the app parses text written by strangers. Every field
+is treated as untrusted.
 
-| # | Risk | What's done | Where |
-|---|---|---|---|
-| 1 | Plaintext traffic / café-wifi MITM | `usesCleartextTraffic=false` **and** a network security config denying cleartext. No HTTP can leave this app. | `AndroidManifest.xml`, `network_security_config.xml` |
-| 2 | MITM via a proxy cert | `<certificates src="system"/>` only — **user-installed CAs are not trusted**. Blocks Burp/mitmproxy-style interception on a compromised device. | `network_security_config.xml` |
-| 3 | Another app reading your data | Zero exported components except the launcher activity. No content providers, no exported services/receivers. `InitializationProvider` removed. | `AndroidManifest.xml` |
-| 4 | Over-permissioning | Four permissions total: `INTERNET`, `ACCESS_NETWORK_STATE`, `POST_NOTIFICATIONS` and `USE_EXACT_ALARM` (the one race reminder, an hour before lights out). No storage, location, contacts, camera, mic. | `AndroidManifest.xml` |
-| 5 | Cache leaking to Google's cloud | `allowBackup=false` + explicit exclusion of `feeds.db` (results cache and news) from cloud backup and device transfer. | `backup_rules.xml`, `data_extraction_rules.xml` |
-| 6 | Reverse-engineering the APK | R8 shrink + obfuscate on release. | `app/build.gradle.kts` |
-| 7 | Secrets in the binary | There are none. Jolpica, MultiViewer, F1's CDN and the RSS feeds need no auth. Nothing to steal. | — |
-| 8 | URLs leaking to logcat | No logging interceptor. Any app with `READ_LOGS` could otherwise read your traffic. | `data/Api.kt` |
-| 9 | Third-party SDKs phoning home | None. No analytics, no crash reporting, no ads. Dependencies are Google/Square/JetBrains only. | `app/build.gradle.kts` |
-
-## Certificate pinning — deliberately left off
-
-The config has a `<pin-set>` block, **commented out**. That's on purpose.
-
-Pinning is the one item here that can **brick your app**. Pin a cert, the host rotates it
-(Let's Encrypt does every 90 days), and every request fails until you ship a new APK. For a
-sideloaded personal app with no update channel, that's a self-inflicted outage.
-
-You already have `system`-CA-only trust, which blocks the realistic attack (a proxy cert
-installed on your device). Pinning defends against a *compromised public CA* — a nation-state
-problem, not a yours problem, and the data is public F1 results anyway.
-
-If you want it anyway, generate real pins:
-
-```bash
-openssl s_client -connect api.jolpi.ca:443 -servername api.jolpi.ca < /dev/null 2>/dev/null \
-  | openssl x509 -pubkey -noout \
-  | openssl pkey -pubin -outform der \
-  | openssl dgst -sha256 -binary \
-  | openssl enc -base64
-```
-
-Pin the **intermediate**, not the leaf, and always include a backup pin. Set `expiration` so
-it fails open rather than bricking.
-
----
-
-## What to do when News lands
-
-Feeds are the first place this app parses text written by strangers. Treat every field as
-untrusted.
-
-- **Strip, never render.** Titles and snippets become plain text (tags removed, entities
-  decoded). No WebView, no HTML rendering, no JavaScript from a feed.
-- **Only open `https` links.** Reject any item whose URL is not `https`, so a feed cannot hand
-  the app an `intent:` or `file:` link. Open articles in the browser with a plain view intent.
-- **Cap everything.** Maximum feed size, items per feed and snippet length, so one broken feed
-  cannot fill the cache or stall the tab.
-- **Images are loaded by Coil only**, over https, from the host the feed named. A tracking
-  pixel is the realistic risk; the cost is the publisher seeing your IP on open, which any
-  browser visit does too.
+- **Strip, never render.** Titles and snippets become plain text with tags removed and entities
+  decoded. There is no WebView, no HTML rendering and no JavaScript from a feed.
+- **Only `https` links open.** An item whose URL is not `https` is rejected, so a feed cannot
+  hand the app an `intent:` or `file:` link. Articles open in the browser with a plain view intent.
+- **Everything is capped.** Maximum feed size, items per feed and snippet length, so one broken
+  feed cannot fill the cache or stall the tab.
+- **Images load through Coil only,** over https, from the host the feed named. The realistic
+  risk is a tracking pixel, and the cost is the publisher seeing your IP, as in any browser visit.
 - **Fetch on tab open only.** No background refresh, which is also a security property.
-- **Reddit is the same rules plus two.** Only the three subreddits in `SUBREDDITS` can reach the request URL, so no name is ever typed in. A post link is kept only if its host is reddit.com or redd.it. Reddit's feeds allow roughly one request a minute without an account, so only the selected subreddit is fetched, and a 429 shows a quiet note and keeps the old copy. No Reddit account, token or API key is used or stored.
+- **Reddit follows the same rules plus two.** Only the three subreddits in `SUBREDDITS` can
+  reach the request URL. A post link is kept only if its host is `reddit.com` or `redd.it`. No
+  Reddit account, token or API key is used or stored.
 
-## The realistic threat model, ranked
+## Threat model, ranked
 
-1. **You install a malicious APK** — by far the likeliest way your phone gets compromised, and
-   nothing in this project affects it. Sideload only what you built.
-2. **A hostile feed item** (a link or text crafted to abuse the app). Covered by the News rules above.
-3. **Unlocked phone, physically taken.** Screen lock is your control, not code.
-4. **Compromised dependency.** Pin versions, use `./gradlew dependencies` occasionally.
-5. ~~Someone scanning the internet and finding your app~~ — **not possible.** No listener.
+1. Installing a malicious APK. This is by far the likeliest way a phone is compromised, and
+   nothing in this project changes it. Install Delta only from this repository's releases, or
+   build it yourself.
+2. A hostile feed item crafted to abuse the app. Covered by the rules above.
+3. A physically taken, unlocked phone. Screen lock is the control, not code.
+4. A compromised dependency. Versions are pinned and upgrades are separate, reviewable changes.
+5. Someone finding the app by scanning the internet. Not possible, because nothing listens.
 
-Number 5 is what you asked about. It's the only one on the list that can't happen.
-
-## The support banner
+## The support link
 
 The `direct` flavor can show one sentence and a link at the bottom of Home. The link opens in the
-browser through the same https-only check News uses (`httpsUrl`), so the app makes no request of its
-own and gains no permission. If `supportUrl` is empty or not https, nothing is drawn. The `play`
-flavor has no banner code at all (`app/src/play`), because Google Play has removed apps for donation
-links.
+browser through the same https-only check the News tab uses (`httpsUrl`), so the app makes no
+request of its own and gains no permission. If `supportUrl` is empty or not https, nothing is
+drawn. The `play` flavor has no such code at all (`app/src/play`), because Google Play has removed
+apps for donation links.

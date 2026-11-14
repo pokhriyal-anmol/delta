@@ -20,7 +20,7 @@ Same filenames in each:
 | `06-weekend-schedule.png` | Race weekend — session schedule in the phone's local time, race accented |
 | `07-calendar.png` | Calendar (F-09) — 22 rounds, past dimmed, next accented, future neutral |
 | `08-constructor.png` | Constructor (F-13): stripe-band hero with the team's 2026 car, driver chips, stats, team facts |
-| `09-news.png` | News tab — placeholder until slice S5 |
+| `09-news.png` | News tab, Press |
 | `10-championship-constructors.png` | Championship — Constructors toggle |
 | `11-championship-1988.png` | Championship — a past season (1988) with the champion marker |
 | `12-race-result.png` | Race result: Belgian GP classification |
