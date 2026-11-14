@@ -65,7 +65,7 @@ differences and the chosen source set are in the spec. Feeds are untrusted input
 (`User-Agent: BestHTTP`). Foreground-only, so it would not violate the no-background rule. See
 `architecture.md` section 3.
 
-**Car liveries don't exist.** F1 publishes no 2026 car art. Don't go looking again.
+**Car art exists, and is F1's, not ours.** The team page hero loads each team's transparent 2026 side-on car from `media.formula1.com/image/upload/c_lfill,w_1200/q_auto/v1740000001/common/f1/2026/{folder}/2026{folder}carright.webp` (`Net.car`, folder names pinned in `Repo.carFolder`). Measured 2026-11-14 for all eleven teams. The season is in the path, so each year needs one edit; a 404 just shows no car. An earlier note here said no such art exists. That was wrong. It is copyrighted and carries sponsor logos, so it is hotlinked like the headshots and never stored or bundled.
 
 ## Design rules that will get broken by accident
 
@@ -92,7 +92,6 @@ Madring and Sepang have no outline and show a plain message.
 
 Still broken, all tracked in the spec with evidence:
 - A retired driver or team in an old Championship table does not open a page (pages are built from the current season).
-- Pull to refresh is deferred: it needs Material 3 1.3, a Compose BOM bump.
 
 Decisions: Lead and wire is the News layout, light-mode grey contrast is left as it is, and no
 release goes out between slices (News is a placeholder).

@@ -73,7 +73,7 @@ Four facts that shaped the design:
 2. Jolpica standings queries require a season. A driver's whole career cannot come from one call,
    so history is built from per-season standings fetched lazily and cached forever.
 3. Jolpica caps `limit` at 100. Page with `offset`.
-4. F1 publishes no 2026 car art. The constructor page uses its two drivers instead.
+4. F1 does publish 2026 car art, one transparent side-on image per team on `media.formula1.com` (see `Net.car`). It is hotlinked, never stored. The earlier note that none existed was wrong.
 
 ### Live timing, if it is ever built
 

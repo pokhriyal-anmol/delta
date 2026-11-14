@@ -62,7 +62,7 @@ private val Dark = F1Palette(
 )
 
 private val Light = F1Palette(
-    canvas = Color(0xFFF5F5F3), card = Color(0xFFFFFFFF), chip = Color(0xFFF0F0EE),
+    canvas = Color(0xFFF8F8F5), card = Color(0xFFFFFFFF), chip = Color(0xFFF0F0EE),
     nav = Color(0xFFFFFFFF), txt = Color(0xFF0A0A0A), sec = Color(0xFF848484),
     ter = Color(0xFFA7A7A7), qua = Color(0xFF9A9A94), divider = Color(0xFFEDEDEA),
     accent = Color(0xFFD71921), barBg = Color(0xFFFFFFFF),   // opaque: 74% white vanished on white cards

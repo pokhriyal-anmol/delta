@@ -1,5 +1,20 @@
 package dev.anpo.f1.ui
 
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.border
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -39,6 +54,7 @@ private data class Line(
  * that open the driver or team page. The current season is live; every earlier one is a final table
  * fetched once and kept forever. Toggle and season survive switching tabs.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChampionshipScreen(repo: Repo, onDriver: (String) -> Unit, onTeam: (String) -> Unit) {
     val p = LocalPalette.current
@@ -50,6 +66,12 @@ fun ChampionshipScreen(repo: Repo, onDriver: (String) -> Unit, onTeam: (String) 
     var tab by rememberSaveable { mutableStateOf(KIND_DRIVER) }
     var menu by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
+    var refreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val tick = rememberTick()
+    val listState = rememberLazyListState()
+    val collapsed by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 160 } }
+    val pull = rememberPullToRefreshState()
     val season = picked ?: current
     val live = picked == null || picked == current
 
@@ -85,93 +107,127 @@ fun ChampionshipScreen(repo: Repo, onDriver: (String) -> Unit, onTeam: (String) 
         else -> ""
     }
 
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
-        item {
-            Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Text(subtitle, style = F1Type.meta.copy(color = p.sec))
-                    Box {
-                        SeasonChip(season.orEmpty()) { menu = true }
-                        SeasonMenu(menu, current?.toIntOrNull(), season, { menu = false }) { year ->
-                            picked = if (year.toString() == current) null else year.toString()
-                            menu = false
+    Box(Modifier.fillMaxSize().background(p.canvas)) {
+        PullToRefreshBox(
+            isRefreshing = refreshing, state = pull, modifier = Modifier.fillMaxSize(),
+            onRefresh = {
+                tick()
+                scope.launch {
+                    refreshing = true
+                    if (live) repo.refreshStandings(force = true) else if (season != null) repo.refreshArchive(season)
+                    refreshing = false
+                }
+            },
+            indicator = {
+                PullToRefreshDefaults.Indicator(state = pull, isRefreshing = refreshing, modifier = Modifier.align(Alignment.TopCenter).padding(top = 36.dp),
+                    containerColor = p.nav, color = p.accent)
+            }
+        ) {
+            LazyColumn(Modifier.fillMaxSize().ambient(p.isDark), listState, contentPadding = PaddingValues(bottom = 140.dp)) {
+                item {
+                    Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Text(subtitle, style = F1Type.meta.copy(color = p.sec))
+                            SeasonChip(season.orEmpty()) { menu = true }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text("World\nChampionship", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
+                        Spacer(Modifier.height(20.dp))
+                        Toggle(tab) { tab = it }
+                    }
+                }
+                item {
+                    F1Card(Modifier.padding(horizontal = 20.dp)) {
+                        val early = tab == KIND_TEAM && (season?.toIntOrNull() ?: Int.MAX_VALUE) < FIRST_CONSTRUCTORS_SEASON
+                        when {
+                            lines.isNotEmpty() -> lines.forEachIndexed { i, l ->
+                                StandingLine(repo, l, if (tab == KIND_DRIVER) onDriver else onTeam, showDivider = i < lines.lastIndex, index = i)
+                            }
+                            loading || (live && season == null) ->
+                                // While the first frame has no rows the card is kept tall: Compose clamps a restored scroll
+                                // offset to the content height, so a short card sent the list back to the top after a tab switch.
+                                Column(Modifier.heightIn(min = if (live && season == null) 1800.dp else 0.dp)) { SkeletonRows(8) }
+                            early -> StateMessage("No constructors' championship", "There was none before $FIRST_CONSTRUCTORS_SEASON.")
+                            live -> StateMessage("No standings yet", "They appear after the first race.")
+                            else -> StateMessage("Couldn't load $season", "Check your connection.", "Try again") {
+                                scope.launch { loading = true; repo.refreshArchive(season!!); loading = false }
+                            }
                         }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                Text("World\nChampionship", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
-                Spacer(Modifier.height(20.dp))
-                Toggle(tab) { tab = it }
             }
         }
-        item {
-            F1Card(Modifier.padding(horizontal = 20.dp)) {
-                if (lines.isEmpty()) {
-                    // While the first frame has no rows, the card is kept tall: Compose clamps a restored scroll
-                    // offset to the content height, so a short card sent the list back to the top after a tab switch.
-                    val holdScroll = if (live && season == null) 1800.dp else 0.dp
-                    Text(emptyMessage(season, tab, live, loading), textAlign = TextAlign.Center,
-                        style = F1Type.meta.copy(color = p.sec),
-                        modifier = Modifier.fillMaxWidth().heightIn(min = holdScroll).padding(horizontal = 24.dp, vertical = 40.dp))
-                }
-                lines.forEachIndexed { i, l ->
-                    StandingLine(repo, l, if (tab == KIND_DRIVER) onDriver else onTeam, showDivider = i < lines.lastIndex)
-                }
-            }
-        }
+        CompactTitleBar("World Championship", collapsed, Modifier.align(Alignment.TopCenter))
+    }
+    if (menu) SeasonSheet(current?.toIntOrNull(), season, { menu = false }) { year ->
+        tick()
+        picked = if (year.toString() == current) null else year.toString()
+        menu = false
     }
 }
 
-private fun emptyMessage(season: String?, tab: Int, live: Boolean, loading: Boolean): String = when {
-    loading || (live && season == null) -> "Loading the standings…"
-    tab == KIND_TEAM && (season?.toIntOrNull() ?: Int.MAX_VALUE) < FIRST_CONSTRUCTORS_SEASON ->
-        "There was no constructors' championship before $FIRST_CONSTRUCTORS_SEASON."
-    live -> "No standings yet this season."
-    else -> "Couldn't load $season. Check your connection and try again."
-}
-
-/** Same look as the year chip on Home. */
+/** Same look as the year chip on Home. The tap area is 48 dp tall, taller than the pill. */
 @Composable
 private fun SeasonChip(season: String, onClick: () -> Unit) {
     val p = LocalPalette.current
-    Row(Modifier.clip(CircleShape).background(p.nav).clickable(role = Role.Button, onClickLabel = "Choose season", onClick = onClick)
-        .padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(season, style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
-        Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = null, tint = p.sec, modifier = Modifier.size(13.dp))
+    Box(Modifier.heightIn(min = 48.dp).pressable(role = Role.Button, onClickLabel = "Choose season", onClick = onClick), contentAlignment = Alignment.Center) {
+        Row(Modifier.clip(CircleShape).background(p.nav).padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(season, style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
+            Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = null, tint = p.sec, modifier = Modifier.size(13.dp))
+        }
     }
 }
 
+/** Every season from the newest back to 1950 as a grid in a bottom sheet. Drag it down to dismiss. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SeasonMenu(open: Boolean, newest: Int?, selected: String?, onClose: () -> Unit, onPick: (Int) -> Unit) {
+private fun SeasonSheet(newest: Int?, selected: String?, onClose: () -> Unit, onPick: (Int) -> Unit) {
     val p = LocalPalette.current
-    DropdownMenu(open, onClose, Modifier.background(p.card).heightIn(max = 360.dp)) {
-        for (year in (newest ?: FIRST_SEASON) downTo FIRST_SEASON) {
-            DropdownMenuItem(
-                text = { Text("$year", style = F1Type.body.copy(color = if (year.toString() == selected) p.accent else p.txt)) },
-                onClick = { onPick(year) })
+    val years = remember(newest) { ((newest ?: FIRST_SEASON) downTo FIRST_SEASON).toList() }
+    ModalBottomSheet(
+        onDismissRequest = onClose, containerColor = p.card, scrimColor = Color.Black.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+        dragHandle = { Box(Modifier.padding(vertical = 12.dp).size(width = 36.dp, height = 4.dp).clip(CircleShape).background(p.chip)) }
+    ) {
+        Text("Season", style = F1Type.section.copy(color = p.txt), modifier = Modifier.padding(start = 20.dp, bottom = 12.dp))
+        LazyVerticalGrid(GridCells.Fixed(4), Modifier.fillMaxWidth().heightIn(max = 420.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(years) { y ->
+                val on = y.toString() == selected
+                Box(Modifier.height(48.dp).clip(RoundedCornerShape(14.dp)).background(if (on) p.accent else p.chip).pressable { onPick(y) },
+                    contentAlignment = Alignment.Center) {
+                    Text("$y", style = F1Type.body.copy(color = if (on) Color.White else p.txt, fontSize = 13.sp))
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun Toggle(selected: Int, onSelect: (Int) -> Unit) =
-    Segments(listOf("Drivers", "Constructors"), selected, onSelect)
+private fun Toggle(selected: Int, onSelect: (Int) -> Unit) = Segments(listOf("Drivers", "Constructors"), selected, onSelect)
 
-/** Equal segments in a pill. The selected one is the darker inset, as the bottom bar is. */
+/** Equal segments on a frosted track. A raised thumb slides between them with a small overshoot. */
 @Composable
 internal fun Segments(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val p = LocalPalette.current
-    Row(Modifier.fillMaxWidth().clip(CircleShape).background(p.chip).padding(4.dp)) {
-        options.forEachIndexed { kind, label ->
-            val on = kind == selected
-            val bg by animateColorAsState(if (on) p.nav else p.chip, tween(160), label = "seg-bg")
-            val fg by animateColorAsState(if (on) p.txt else p.sec, tween(160), label = "seg-fg")
-            Box(Modifier.weight(1f).clip(CircleShape).background(bg)
-                .clickable(role = Role.Tab, onClickLabel = label) { onSelect(kind) }.padding(vertical = 10.dp),
-                contentAlignment = Alignment.Center) {
-                Text(label, style = F1Type.body.copy(color = fg, fontSize = 13.sp))
+    val motion = rememberMotionEnabled()
+    val tick = rememberTick()
+    BoxWithConstraints(Modifier.fillMaxWidth().height(48.dp).clip(CircleShape).background(p.chip.copy(alpha = 0.7f))) {
+        val w = maxWidth / options.size
+        val x by animateDpAsState(w * selected, if (motion) spring(dampingRatio = 0.72f, stiffness = 400f) else snap(), label = "thumb")
+        Box(Modifier.offset(x = x).width(w).fillMaxHeight().padding(4.dp).clip(CircleShape).background(p.nav)
+            .border(0.5.dp, litEdge(p.isDark), CircleShape))
+        Row(Modifier.fillMaxSize()) {
+            options.forEachIndexed { i, label ->
+                val on = i == selected
+                val fg by animateColorAsState(if (on) p.txt else p.sec, tween(160, easing = EaseOut), label = "seg-fg")
+                Box(Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab, onClickLabel = label) { if (!on) tick(); onSelect(i) },
+                    contentAlignment = Alignment.Center) {
+                    Text(label, style = F1Type.body.copy(color = fg, fontSize = 13.sp))
+                }
             }
         }
     }
@@ -179,9 +235,9 @@ internal fun Segments(options: List<String>, selected: Int, onSelect: (Int) -> U
 
 /** Mirrors the Home driver row so the table reads as the same family. Team colour is data, never chrome. */
 @Composable
-private fun StandingLine(repo: Repo, l: Line, onOpen: (String) -> Unit, showDivider: Boolean) {
+private fun StandingLine(repo: Repo, l: Line, onOpen: (String) -> Unit, showDivider: Boolean, index: Int) {
     val p = LocalPalette.current
-    Column(Modifier.clickable(enabled = l.opens) { onOpen(l.id) }) {
+    Column(Modifier.arrive(index).pressable(enabled = l.opens) { onOpen(l.id) }) {
         Row(Modifier.heightIn(min = 64.dp).padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("${l.position}", style = F1Type.meta.copy(color = p.sec), modifier = Modifier.width(18.dp))
             Box(Modifier.width(4.dp).height(24.dp).clip(RoundedCornerShape(2.dp))

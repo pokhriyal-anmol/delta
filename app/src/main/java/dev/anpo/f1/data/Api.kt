@@ -99,4 +99,9 @@ object Net {
      *  so we don't need OpenF1 at all - which matters, because OpenF1's free tier
      *  goes fully dark during live sessions (see SECURITY.md / architecture doc). */
     fun headshot(key: String) = "https://media.formula1.com/content/dam/fom-website/drivers/$key.png"
+
+    /** The 2026 side-on car, transparent, from the same CDN. Pinned by team folder (see Repo.carFolder).
+     *  The season is in the path, so next year this needs one edit; until then a 404 just shows no car. */
+    fun car(folder: String) =
+        "https://media.formula1.com/image/upload/c_lfill,w_1200/q_auto/v1740000001/common/f1/2026/$folder/2026${folder}carright.webp"
 }

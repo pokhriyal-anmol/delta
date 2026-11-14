@@ -5,7 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -58,6 +64,8 @@ class MainActivity : ComponentActivity() {
             }
             F1Theme(dark) {
                 val p = LocalPalette.current
+                val motion = rememberMotionEnabled()
+                val tick = rememberTick()
                 val nav = rememberNavController()
                 val entry by nav.currentBackStackEntryAsState()
                 val tab = Tab.values().firstOrNull { t ->
@@ -71,8 +79,9 @@ class MainActivity : ComponentActivity() {
                         nav, startDestination = Tab.Home.graph,
                         enterTransition = { fadeIn(tween(180)) },
                         exitTransition = { fadeOut(tween(140)) },
-                        popEnterTransition = { fadeIn(tween(180)) },
-                        popExitTransition = { fadeOut(tween(140)) },
+                        // Predictive back: the page being left shrinks and fades while the one under it comes forward.
+                        popEnterTransition = { fadeIn(tween(180)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220, easing = EaseOut)) },
+                        popExitTransition = { fadeOut(tween(140)) + scaleOut(targetScale = 0.92f, animationSpec = tween(220, easing = EaseOut)) },
                     ) {
                         navigation(startDestination = Tab.Home.start, route = Tab.Home.graph) {
                             composable("home") {
@@ -109,7 +118,7 @@ class MainActivity : ComponentActivity() {
                     // backdrop blur, so the design's translucent-blur pill can't be faked -
                     // it goes opaque (p.nav) and gets its lift from a hairline ring
                     // (the inset-light trick that works on OLED black) plus a shadow.
-                    Row(
+                    BoxWithConstraints(
                         Modifier.align(Alignment.BottomCenter)
                             .padding(horizontal = 20.dp, vertical = 30.dp)
                             .fillMaxWidth()
@@ -121,12 +130,17 @@ class MainActivity : ComponentActivity() {
                             .border(0.7.dp,
                                 if (p.isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.06f),
                                 CircleShape)
-                            .padding(vertical = 4.5.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 4.5.dp)
                     ) {
-                        Tab.values().forEach { t ->
-                            NavIcon(t, on = t == tab) { nav.openTab(t, selected = t == tab) }
+                        // A raised disc slides to the active tab with a small overshoot.
+                        val cell = maxWidth / Tab.values().size
+                        val x by animateDpAsState((cell * Tab.values().indexOf(tab)) + (cell - 64.dp) / 2,
+                            if (motion) spring(dampingRatio = 0.72f, stiffness = 400f) else snap(), label = "thumb")
+                        Box(Modifier.offset(x = x).size(width = 64.dp, height = 48.dp).clip(CircleShape).background(p.chip))
+                        Row(Modifier.fillMaxWidth()) {
+                            Tab.values().forEach { t ->
+                                NavIcon(t, on = t == tab, Modifier.weight(1f)) { if (t != tab) tick(); nav.openTab(t, selected = t == tab) }
+                            }
                         }
                     }
                 }
@@ -168,11 +182,12 @@ private fun NavController.openTab(tab: Tab, selected: Boolean) {
 }
 
 @Composable
-private fun NavIcon(tab: Tab, on: Boolean, onClick: () -> Unit) {
+private fun NavIcon(tab: Tab, on: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val p = LocalPalette.current
-    Box(Modifier.size(48.dp).clip(CircleShape).clickable(role = Role.Tab, onClickLabel = tab.label, onClick = onClick),
+    val tint by animateColorAsState(if (on) p.accent else p.sec, tween(200, easing = EaseOut), label = "tint")
+    Box(modifier.height(48.dp).clip(CircleShape).clickable(role = Role.Tab, onClickLabel = tab.label, onClick = onClick),
         contentAlignment = Alignment.Center) {
         Icon(painterResource(tab.icon), contentDescription = tab.label,
-            tint = if (on) p.accent else p.sec, modifier = Modifier.size(27.dp))
+            tint = tint, modifier = Modifier.size(27.dp))
     }
 }

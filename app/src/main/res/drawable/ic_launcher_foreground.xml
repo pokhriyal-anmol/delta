@@ -1,17 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Delta · foreground layer.
-
-  Adaptive icon geometry: 108x108 canvas, ~72 visible after masking,
-  66 guaranteed safe (21..87). This glyph spans 23.6..84.4 x, 26..82 y —
-  inside the safe zone even with the 3.6 stroke, so no launcher mask
-  (circle / squircle / teardrop) can clip it.
-
-  The red is a filled QUAD in the channel between the two triangles,
-  not a stroke — it reads as a charged level, not a decorated edge.
-
-  No drop shadow: VectorDrawable has no filter support. Bake a PNG if
-  you want one. The launcher shadows the icon shape regardless.
+  Delta foreground: a racing line through a chicane with a red apex.
+  Drawn from plain geometry, no F1, team or tyre marks. 108x108 canvas, 21..87 is the
+  always-visible zone; this spans 23.5..85.5 x and 22.5..85.5 y, so no launcher mask clips it.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -19,26 +10,20 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- red channel fill: outer apex -> outer BR -> inner BR -> inner apex -->
     <path
-        android:pathData="M54,26 L84.4,82 L74,75.6 L54,42 Z"
+        android:pathData="M27,82 C27,58 40,56 54,54 C70,52 82,50 82,26"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- apex halo -->
+    <path
+        android:pathData="M54,41.5 A12.5,12.5 0 1,0 54,66.5 A12.5,12.5 0 1,0 54,41.5 Z"
+        android:strokeColor="#4DD71921"
+        android:strokeWidth="2" />
+
+    <!-- apex -->
+    <path
+        android:pathData="M54,46 A8,8 0 1,0 54,62 A8,8 0 1,0 54,46 Z"
         android:fillColor="#FFD71921" />
-
-    <!-- outer triangle -->
-    <path
-        android:pathData="M54,26 L84.4,82 L23.6,82 Z"
-        android:fillColor="#00000000"
-        android:strokeColor="#FF0A0A0A"
-        android:strokeWidth="3.6"
-        android:strokeLineJoin="round"
-        android:strokeLineCap="round" />
-
-    <!-- inner triangle -->
-    <path
-        android:pathData="M54,42 L74,75.6 L34,75.6 Z"
-        android:fillColor="#00000000"
-        android:strokeColor="#FF0A0A0A"
-        android:strokeWidth="3.6"
-        android:strokeLineJoin="round"
-        android:strokeLineCap="round" />
 </vector>

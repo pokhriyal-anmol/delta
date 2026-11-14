@@ -1,5 +1,8 @@
 package dev.anpo.f1.ui
 
+import androidx.compose.foundation.border
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -101,7 +104,8 @@ fun F1Card(modifier: Modifier = Modifier, radius: Int = 28, content: @Composable
                 spotColor = Color.Black.copy(alpha = if (p.isDark) 0.9f else 0.16f),
             )
             .clip(RoundedCornerShape(radius.dp))
-            .background(p.card),
+            .background(p.card)
+            .border(0.5.dp, litEdge(p.isDark), RoundedCornerShape(radius.dp)),
         content = content
     )
 }
@@ -180,8 +184,15 @@ fun Circuit3D(geo: CircuitGeometryEntity, modifier: Modifier = Modifier) {
 @Composable
 fun StatBlock(value: String, label: String, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
+    // Counts up once when the block first appears. Zero-padded values keep their width.
+    val n = value.toIntOrNull()
+    val motion = rememberMotionEnabled()
+    var target by remember { mutableStateOf(if (motion) 0 else n ?: 0) }
+    LaunchedEffect(n) { if (n != null) target = n }
+    val shown by animateIntAsState(target, tween(450, easing = EaseOut), label = "count")
+    val text = if (n == null) value else if (value.length > 1 && value.startsWith("0")) "%0${value.length}d".format(shown) else shown.toString()
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = F1Type.stat.copy(color = p.txt, fontSize = 22.sp))
+        Text(text, style = F1Type.stat.copy(color = p.txt, fontSize = 22.sp))
         Spacer(Modifier.height(5.dp))
         Text(label, style = F1Type.label.copy(color = p.sec, fontSize = 9.sp))
     }

@@ -1,5 +1,10 @@
 package dev.anpo.f1.ui
 
+import kotlinx.coroutines.launch
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -53,6 +58,7 @@ private fun ago(at: Long?, now: Long): String? {
 }
 
 /** Press headlines from eight feeds in a lead-and-wire layout, and a Reddit tab for one followed subreddit. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsScreen(repo: Repo) {
     val p = LocalPalette.current
@@ -65,31 +71,47 @@ fun NewsScreen(repo: Repo) {
     val problem by repo.redditProblem.collectAsState()
     val loading by repo.newsLoading.collectAsState()
     val now = remember(press, posts) { System.currentTimeMillis() }
+    val scope = rememberCoroutineScope()
+    val tick = rememberTick()
+    var refreshing by remember { mutableStateOf(false) }
+    val pull = rememberPullToRefreshState()
 
-    var forced by remember { mutableStateOf(0) }
-    LaunchedEffect(tab, sub, forced) {
-        if (tab == PRESS) repo.refreshNews(force = forced > 0) else repo.refreshReddit(sub, force = forced > 0)
+    LaunchedEffect(tab, sub) { if (tab == PRESS) repo.refreshNews() else repo.refreshReddit(sub) }
+    val refresh: () -> Unit = {
+        scope.launch {
+            refreshing = true
+            if (tab == PRESS) repo.refreshNews(force = true) else repo.refreshReddit(sub, force = true)
+            refreshing = false
+        }
     }
 
     val list = rememberLazyListState()
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), list, contentPadding = PaddingValues(bottom = 140.dp)) {
-        item {
-            Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (loading) "Updating…" else if (tab == PRESS) "${press.size} stories" else "${posts.size} posts",
-                        style = F1Type.meta.copy(color = p.sec))
-                    Text("Refresh", style = F1Type.meta.copy(color = p.accent, fontSize = 12.sp),
-                        modifier = Modifier.clickable(enabled = !loading, role = Role.Button) { forced++ }.heightIn(min = 40.dp).wrapContentHeight(Alignment.CenterVertically))
+    val collapsed by remember { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 160 } }
+    Box(Modifier.fillMaxSize().background(p.canvas)) {
+        PullToRefreshBox(
+            isRefreshing = refreshing, state = pull, modifier = Modifier.fillMaxSize(),
+            onRefresh = { tick(); refresh() },
+            indicator = {
+                PullToRefreshDefaults.Indicator(state = pull, isRefreshing = refreshing, modifier = Modifier.align(Alignment.TopCenter).padding(top = 36.dp),
+                    containerColor = p.nav, color = p.accent)
+            }
+        ) {
+            LazyColumn(Modifier.fillMaxSize().ambient(p.isDark), list, contentPadding = PaddingValues(bottom = 140.dp)) {
+                item {
+                    Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
+                        Text(if (tab == PRESS) "${press.size} stories" else "${posts.size} posts", style = F1Type.meta.copy(color = p.sec))
+                        Spacer(Modifier.height(8.dp))
+                        Text("News", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
+                        Spacer(Modifier.height(20.dp))
+                        Segments(listOf("Press", "Reddit"), tab) { tab = it }
+                        if (tab == REDDIT) { Spacer(Modifier.height(4.dp)); SubredditPicker(sub) { tick(); sub = it; repo.setRedditChoice(it) } }
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
-                Text("News", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
-                Spacer(Modifier.height(20.dp))
-                Segments(listOf("Press", "Reddit"), tab) { tab = it }
-                if (tab == REDDIT) { Spacer(Modifier.height(12.dp)); SubredditPicker(sub) { sub = it; repo.setRedditChoice(it) } }
+                if (tab == PRESS) pressItems(press, failed, loading, now, refresh) { open(ctx, it) }
+                else redditItems(posts, problem, loading, now, sub, refresh) { open(ctx, it) }
             }
         }
-        if (tab == PRESS) pressItems(press, failed, loading, now) { open(ctx, it) }
-        else redditItems(posts, problem, loading, now, sub) { open(ctx, it) }
+        CompactTitleBar("News", collapsed, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -99,35 +121,44 @@ private fun SubredditPicker(selected: String, onPick: (String) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SUBREDDITS.forEach { s ->
             val on = s == selected
-            Text("r/$s", style = F1Type.body.copy(color = if (on) p.txt else p.sec, fontSize = 12.sp),
-                modifier = Modifier.clip(CircleShape).background(if (on) p.nav else p.chip)
-                    .clickable(role = Role.Tab, onClickLabel = "Follow r/$s") { onPick(s) }
-                    .heightIn(min = 40.dp).padding(horizontal = 13.dp).wrapContentHeight(Alignment.CenterVertically))
+            Box(Modifier.heightIn(min = 48.dp).pressable(role = Role.Tab, onClickLabel = "Follow r/$s") { onPick(s) }, contentAlignment = Alignment.Center) {
+                Text("r/$s", style = F1Type.body.copy(color = if (on) p.txt else p.sec, fontSize = 12.sp),
+                    modifier = Modifier.clip(CircleShape).background(if (on) p.nav else p.chip).padding(horizontal = 13.dp, vertical = 9.dp))
+            }
         }
     }
 }
 
 private fun LazyListScope.pressItems(
-    items: List<NewsItem>, failed: List<String>, loading: Boolean, now: Long, onOpen: (String) -> Unit) {
+    items: List<NewsItem>, failed: List<String>, loading: Boolean, now: Long, retry: () -> Unit, onOpen: (String) -> Unit) {
     val lead = items.firstOrNull { it.imageUrl != null }
     val wire = items.filter { it !== lead }
-    if (items.isEmpty()) item { Note(if (loading) "Loading headlines…" else "No headlines yet. Check your connection and tap Refresh.") }
+    if (items.isEmpty()) item {
+        F1Card(Modifier.padding(horizontal = 20.dp)) {
+            if (loading) SkeletonRows(6, 76.dp)
+            else StateMessage("No headlines yet", "Check your connection.", "Try again", onAction = retry)
+        }
+    }
     lead?.let { item { LeadCard(it, now, onOpen) } }
     if (wire.isNotEmpty()) item {
         F1Card(Modifier.padding(horizontal = 20.dp).padding(top = if (lead != null) 14.dp else 0.dp)) {
-            wire.forEachIndexed { i, n -> WireRow(n, ago(n.publishedAt, now), n.source, onOpen, i < wire.lastIndex) }
+            wire.forEachIndexed { i, n -> WireRow(n, ago(n.publishedAt, now), n.source, onOpen, i < wire.lastIndex, i) }
         }
     }
     if (failed.isNotEmpty()) item { Note("Couldn't load: ${failed.joinToString(", ")}.") }
 }
 
 private fun LazyListScope.redditItems(
-    posts: List<NewsItem>, problem: String?, loading: Boolean, now: Long, sub: String, onOpen: (String) -> Unit) {
-    if (posts.isEmpty()) item { Note(if (loading) "Loading r/$sub…" else problem ?: "Nothing from r/$sub yet.") }
-    else {
+    posts: List<NewsItem>, problem: String?, loading: Boolean, now: Long, sub: String, retry: () -> Unit, onOpen: (String) -> Unit) {
+    if (posts.isEmpty()) item {
+        F1Card(Modifier.padding(horizontal = 20.dp)) {
+            if (loading) SkeletonRows(6, 76.dp)
+            else StateMessage(problem ?: "Nothing from r/$sub yet", "Reddit allows about one request a minute.", "Try again", onAction = retry)
+        }
+    } else {
         item {
             F1Card(Modifier.padding(horizontal = 20.dp)) {
-                posts.forEachIndexed { i, n -> WireRow(n, ago(n.publishedAt, now), n.source, onOpen, i < posts.lastIndex) }
+                posts.forEachIndexed { i, n -> WireRow(n, ago(n.publishedAt, now), n.source, onOpen, i < posts.lastIndex, i) }
             }
         }
         item { Note(problem ?: "Hot on r/$sub. Posts open in Reddit.") }
@@ -146,9 +177,10 @@ private fun Note(text: String) {
 private fun LeadCard(n: NewsItem, now: Long, onOpen: (String) -> Unit) {
     val p = LocalPalette.current
     F1Card(Modifier.padding(horizontal = 20.dp), radius = 28) {
-        Column(Modifier.clickable(role = Role.Button, onClickLabel = "Open story") { onOpen(n.url) }) {
-            Box(Modifier.fillMaxWidth().height(210.dp)) {
-                AsyncImage(model = n.imageUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+        val ctx = LocalContext.current
+        Column(Modifier.pressable(role = Role.Button, onClickLabel = "Open story") { onOpen(n.url) }) {
+            Box(Modifier.fillMaxWidth().height(210.dp).background(p.chip)) {
+                AsyncImage(model = fadeModel(ctx, n.imageUrl.orEmpty()), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                 Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to p.card)))
             }
             Column(Modifier.padding(start = 18.dp, end = 18.dp, bottom = 18.dp)) {
@@ -172,9 +204,9 @@ private fun Meta(source: String, time: String?) {
 
 /** One dense wire row: source and time, then the headline, then a line of text if the post has one. */
 @Composable
-private fun WireRow(n: NewsItem, time: String?, source: String, onOpen: (String) -> Unit, divider: Boolean) {
+private fun WireRow(n: NewsItem, time: String?, source: String, onOpen: (String) -> Unit, divider: Boolean, index: Int) {
     val p = LocalPalette.current
-    Column(Modifier.clickable(role = Role.Button, onClickLabel = "Open story") { onOpen(n.url) }) {
+    Column(Modifier.arrive(index).pressable(role = Role.Button, onClickLabel = "Open story") { onOpen(n.url) }) {
         Column(Modifier.heightIn(min = 64.dp).padding(horizontal = 18.dp, vertical = 14.dp)) {
             Meta(source, time)
             Spacer(Modifier.height(5.dp))

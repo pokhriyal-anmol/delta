@@ -329,6 +329,14 @@ S5 verification and deviations:
 
 Not picked: expandable rows, boxed mono-caps, label-expanding nav, direction-aware tabs, blur-in, texture and neutral pill buttons, the switch row and lead-time picker.
 
+S7 verification and deviations:
+
+- Built in one pass at the owner's request, after a separate Compose BOM bump (2024.09.03, Material 3 1.3.0) that was committed first. 48 unit tests pass. Checked on the emulator in dark and light, every screenshot re-shot.
+- Done: sliding-thumb bottom bar, spring-thumb toggles, lit card edge and press-in on rows, red pill buttons for the one primary action (Load more seasons, Show all, Try again), count-up stats, bell in the Home top bar with a toast (the hero line is plain again, spacing back to v1.1.2), season bottom sheet with a year grid, skeleton rows, staggered first-six arrival, image fade-in, state messages with a Try again pill, chart labels on every second round, collapsing titles on Championship, News and Calendar, pull to refresh on Home, Championship and News, haptic ticks, predictive back transitions, 48 dp tap areas on the chips, bell and toggles, and the warmer light canvas.
+- Measured: the bell toggles the real OS alarm (1 armed, 0 after off, 1 after on). Pull to refresh shows the indicator and ends without a crash. Setting the phone's animation scale to zero loads every screen with no crash.
+- Not done or different from the board: the "View all" link on Home is still small text, because enlarging it would push the Drivers list down 18 dp on a screen you asked me not to change. Result, circuit, driver and team pages have no collapsing title (their titles are part of a hero). The first-six-rows arrival can replay if a list is scrolled far away and back. Haptics and the spring feel were not felt on a real phone; only the code paths ran.
+- The previous "reminder on/off" text line is gone. Tapping the date line does nothing now.
+
 ## Not doing
 
 Tasks, Valorant, Twitch, dictation, Syncthing, the CRDT engine, widgets, live timing, OpenF1 telemetry. Live timing and telemetry stay in the F1 section of the architecture doc as later options, not V2.

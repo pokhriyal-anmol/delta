@@ -21,15 +21,16 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 - Home: next race from the real calendar with a live countdown, driver standings, team tiles, the next circuit in 3D
 - Championship: Drivers and Constructors tables with a season selector back to 1950 and a champion marker; tap a row to open the driver or team
 - Driver: carbon race number, team-colour glow, real headshot, season stats, points by round, a link to the team, career totals, teammate head-to-head, recent results and season history
-- Constructor: both drivers, season stats, team facts, points by round, career totals and season history
+- Constructor: the team's real 2026 car in a stripe-band hero, both drivers as chips, season stats, team facts, points by round, career totals and season history
 - Calendar: every round of the season; tap a round for its result, its weekend or its circuit
 - Race result: the full classification for any finished round, laps down and retirements included
 - Circuit: the 3D track, derived length, laps, turns and the winner of every race held there
 - Race weekend: track, derived length, laps, turns and local-time sessions for any circuit that has an outline
 - Three tabs, each with its own back stack: Home, Championship, News (a placeholder)
 - News: eight press feeds in a lead-and-wire layout, and a Reddit tab for r/formula1, r/formuladank or r/f1discussion. Stories open in the browser or the Reddit app
-- Race reminder: one notification an hour before lights out. The line under the countdown on Home says "reminder on" or "reminder off" and a tap toggles it
+- Race reminder: one notification an hour before lights out. A bell beside the season chip on Home turns it on or off
 - After the final race Home shows "Season complete" instead of a countdown
+- Polish: sliding-thumb bottom bar and toggles, press feedback, season picker as a bottom sheet, skeleton loading, count-up stats, collapsing titles, pull to refresh, haptics, predictive back, and reduced-motion support
 - Light and dark follow the phone
 
 ## What does not work yet

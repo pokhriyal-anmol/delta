@@ -14,7 +14,7 @@ connecting to open ports on reachable IPs.
 
 This app **never listens**. It has no server, no open port, no bound socket, no DNS record,
 no public IP. It makes outbound HTTPS requests to `api.jolpi.ca` (results), `api.multiviewer.app` (track
-outlines), `media.formula1.com` (driver photos) and the news publishers' feed and image hosts
+outlines), `media.formula1.com` (driver photos and 2026 car images) and the news publishers' feed and image hosts
 (listed in `.scratch/f1-v2/spec.md`), and reads the replies. That's the entire network surface.
 
 An outbound-only client is not addressable from the internet. There is nothing to scan. Your

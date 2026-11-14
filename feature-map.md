@@ -87,7 +87,7 @@ happened" alerts need polling or a push server, and are banned.
 | F-27 | Team radio | Cut | OpenF1 reports almost no radio data in 2026 |
 | F-30 to F-36 | Live timing over SignalR, foreground only | Later | See `architecture.md` section 3 |
 | F-40, F-41 | Telemetry traces, track position replay | Later | |
-| F-45 | Race and qualifying start reminders | Built (race only) | One notification an hour before lights out; tap the line on Home to turn it on or off. Qualifying is not covered |
+| F-45 | Race and qualifying start reminders | Built (race only) | One notification an hour before lights out; the bell on Home turns it on or off. Qualifying is not covered |
 
 ## 7. Cross-cutting
 
@@ -99,7 +99,7 @@ happened" alerts need polling or a push server, and are banned.
 | X-04 | Offline "as of" markers, never an endless spinner | Partial, V2 |
 | X-05 | Error and empty states per screen | Partial, V2 |
 | X-06 | Dark and light theme from the system | Built |
-| X-07 | Pull to refresh | Deferred | Needs Material 3 1.3, a Compose BOM bump that should be its own change |
+| X-07 | Pull to refresh | Built | Home, Championship and News, after the Compose BOM bump to 2024.09.03 |
 | X-08 | Home-screen widget (next race) | Later |
 
 ## 8. Effort

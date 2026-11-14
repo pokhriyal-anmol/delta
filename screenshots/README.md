@@ -1,7 +1,7 @@
 # App screenshots
 
 Captured on a Pixel 6 emulator (Android 14, API 34), live Jolpica data. All files
-were re-shot on 2026-11-14 after V2 slices S0 to S5 (three-tab bar, Round 21 Las Vegas is next, Weekend works for any
+were re-shot on 2026-11-14 after V2 slices S0 to S7 (three-tab bar, Round 21 Las Vegas is next, Weekend works for any
 circuit with an outline).
 The app follows the system theme, so there are two full sets:
 
@@ -19,12 +19,13 @@ Same filenames in each:
 | `05-weekend.png` | Race weekend — 3D circuit hero (Las Vegas) + length, laps, turns |
 | `06-weekend-schedule.png` | Race weekend — session schedule in the phone's local time, race accented |
 | `07-calendar.png` | Calendar (F-09) — 22 rounds, past dimmed, next accented, future neutral |
-| `08-constructor.png` | Constructor (F-13) — carbon position, both drivers, stats, team facts |
+| `08-constructor.png` | Constructor (F-13): stripe-band hero with the team's 2026 car, driver chips, stats, team facts |
 | `09-news.png` | News tab — placeholder until slice S5 |
 | `10-championship-constructors.png` | Championship — Constructors toggle |
 | `11-championship-1988.png` | Championship — a past season (1988) with the champion marker |
 | `12-race-result.png` | Race result: Belgian GP classification |
 | `13-circuit.png` | Circuit page: Spa with Eau Rouge, facts and past winners |
+| `17-season-sheet.png` | Championship: the season picker as a bottom sheet |
 | `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |
 | `15-team-depth.png` | Team page, lower half: points by round, career, seasons |

@@ -171,6 +171,14 @@ class Repo(ctx: Context) {
      *  code disagree (Antonelli lives under K/ but is coded ANDANT01). Pinned. */
     fun headshotKey(driverId: String): String? = HEADSHOTS[driverId]
 
+    /** Jolpica teamId -> the folder name F1's CDN uses for that team's car image. Measured 2026-11-14:
+     *  all eleven return a transparent image. */
+    fun carFolder(teamId: String): String? = when (teamId) {
+        "mercedes", "ferrari", "mclaren", "alpine", "williams", "haas", "audi", "cadillac" -> teamId
+        "red_bull" -> "redbullracing"; "aston_martin" -> "astonmartin"; "rb" -> "racingbulls"
+        else -> null
+    }
+
     /** Ergast circuitId -> MultiViewer circuit key, or null when MultiViewer has no outline
      *  (the screen then says so instead of drawing something wrong). */
     fun circuitKey(circuitId: String): Int? = CIRCUIT_KEYS[circuitId]

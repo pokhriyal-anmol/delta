@@ -47,20 +47,20 @@ fun ResultScreen(repo: Repo, round: Int, onDriver: (String) -> Unit, onCircuit: 
         Spacer(Modifier.height(12.dp))
         F1Card(Modifier.padding(horizontal = 20.dp)) {
             if (rows.isEmpty()) {
-                Text(if (loading) "Loading the results…" else "Results are not in yet. They appear within a day of the race.", textAlign = TextAlign.Center,
-                    style = F1Type.meta.copy(color = p.sec), modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 40.dp))
+                if (loading) SkeletonRows(10)
+                else StateMessage("Results are not in yet", "They appear within a day of the race.")
             }
             val leaderLaps = rows.maxOfOrNull { it.laps } ?: 0
-            rows.forEachIndexed { i, r -> ResultLine(repo, r, leaderLaps, r.driverId in known, onDriver, i < rows.lastIndex) }
+            rows.forEachIndexed { i, r -> ResultLine(repo, r, leaderLaps, r.driverId in known, onDriver, i < rows.lastIndex, i) }
         }
         Spacer(Modifier.height(140.dp))
     }
 }
 
 @Composable
-private fun ResultLine(repo: Repo, r: RaceResultEntity, leaderLaps: Int, opens: Boolean, onOpen: (String) -> Unit, divider: Boolean) {
+private fun ResultLine(repo: Repo, r: RaceResultEntity, leaderLaps: Int, opens: Boolean, onOpen: (String) -> Unit, divider: Boolean, index: Int) {
     val p = LocalPalette.current
-    Column(Modifier.clickable(enabled = opens) { onOpen(r.driverId) }) {
+    Column(Modifier.arrive(index).pressable(enabled = opens) { onOpen(r.driverId) }) {
         Row(Modifier.heightIn(min = 64.dp).padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(r.positionText, style = F1Type.meta.copy(color = p.sec), modifier = Modifier.width(22.dp))
             Box(Modifier.width(4.dp).height(24.dp).clip(RoundedCornerShape(2.dp)).background(teamColour(repo.teamColour(r.teamId))))
@@ -139,9 +139,9 @@ fun CircuitScreen(repo: Repo, circuitId: String) {
             val shown = if (all) winners else winners.take(WINNERS_SHOWN)
             shown.forEachIndexed { i, w -> WinnerLine(repo, w, i < shown.lastIndex || winners.size > shown.size) }
             if (winners.size > WINNERS_SHOWN) {
-                Text(if (all) "Show fewer" else "Show all ${winners.size}", style = F1Type.body.copy(color = p.accent, fontSize = 13.sp),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { all = !all }.heightIn(min = 52.dp).wrapContentHeight(Alignment.CenterVertically))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    PillButton(if (all) "Show fewer" else "Show all ${winners.size}") { all = !all }
+                }
             }
         }
         Spacer(Modifier.height(140.dp))

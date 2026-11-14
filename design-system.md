@@ -285,3 +285,37 @@ navigation degrades fast past three or four destinations, so a fourth tab means 
 - Don't make one element square.
 - Don't add a second accent. If it collides, chrome yields — the data never does.
 - Don't tune the backdrop to avoid the subject. Differentiate the subject.
+
+
+## Motion language (S7)
+
+One set of rules for the whole app. Everything uses a strong ease-out, `cubic-bezier(0.23, 1, 0.32, 1)`, and stays under 300 ms. Sheets are the exception.
+
+| Moment | Rule |
+|---|---|
+| Any press | Scale to 97% over 160 ms, ease-out. Rows, chips, tiles, pills. No ripple |
+| Bottom bar and toggles | A raised thumb slides on a spring (damping 0.72, stiffness 400). Icon and label colour ease over 160 to 200 ms |
+| Lists arriving | The first six rows fade and rise 8 dp, 35 ms apart. Later rows appear at once |
+| Loading | Skeleton rows the same height as the real rows, a slow shimmer, never a spinner or "Loading" text |
+| Stats | Count up once when a page opens, 450 ms |
+| Sheets | The season picker is a bottom sheet, drag to dismiss |
+| Back | Predictive back: the page being left shrinks and fades while the one under it comes forward |
+| Images | Fade in over 250 ms on a tinted placeholder |
+| Reduced motion | The phone's "remove animations" setting turns all of the above into instant changes |
+
+Cards get a thin lit top edge (white at 10% fading to 2%) because depth on near-black comes from light, not shadow. The one primary action on a page is a red pill with an arrow. Secondary links stay as text.
+
+
+## Team hero (S8)
+
+Borrowed from the banner on F1's own team pages, redrawn in our language. From the top: a glow in the team colour with a band of fading dots behind it, the team's real 2026 car crossing the page, the name inside a stripe band, a small caption line, both drivers as chips that open their pages, then points and titles.
+
+| Part | Rule |
+|---|---|
+| Name | White (black in light mode), never the team colour. 48 sp, or 38 sp when longer than eight characters. " F1 Team" is dropped from the name, the full name stays in the facts card |
+| Stripes | A thick bar in the text colour over a thin bar in the team colour, the inner end slanted 11 dp. Team colour stays data |
+| Car | Transparent image, `ContentScale.Fit`, 96 dp tall. If it fails to load the space stays, nothing else moves |
+| Chips | Headshot circle plus family name on a card-coloured pill, press-in like every row |
+| Dropped | The ghost carbon position number and the large headshots. Position now reads in the caption as `P2` |
+
+The carbon number is still used on driver pages.

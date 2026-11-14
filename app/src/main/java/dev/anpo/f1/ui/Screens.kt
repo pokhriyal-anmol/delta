@@ -1,5 +1,16 @@
 package dev.anpo.f1.ui
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,6 +46,7 @@ import java.time.format.DateTimeFormatter
 
 private fun raceInstant(r: RaceEntity): Instant? = utcMillis(r.date, r.time)?.let(Instant::ofEpochMilli)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                onWeekend: () -> Unit, onCalendar: () -> Unit, onConstructor: (String) -> Unit) {
@@ -56,10 +68,17 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
     var wanted by remember { mutableStateOf(Reminders.enabled(ctx)) }
     var allowed by remember { mutableStateOf(Reminders.canNotify(ctx)) }
     val reminderOn = wanted && allowed
+    val tick = rememberTick()
+    var note by remember { mutableStateOf<String?>(null) }
+    var lastNote by remember { mutableStateOf("") }
+    LaunchedEffect(note) { if (note != null) { lastNote = note.orEmpty(); delay(1600); note = null } }
+    var refreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val pull = rememberPullToRefreshState()
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         allowed = ok; wanted = ok; Reminders.setEnabled(ctx, ok)
     }
-    // The text says "reminder on" by default, so ask for notifications once, the first time the next race shows.
+    // The bell says "on" by default, so ask for notifications once, the first time the next race shows.
     LaunchedEffect(next?.id) {
         if (next != null && wanted && !allowed && !Reminders.asked(ctx)) { Reminders.markAsked(ctx); ask.launch(Manifest.permission.POST_NOTIFICATIONS) }
     }
@@ -68,7 +87,16 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
     }
     if (races.isEmpty()) return   // nothing is drawn until the calendar arrives, as before
 
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
+    Box(Modifier.fillMaxSize().background(p.canvas)) {
+    PullToRefreshBox(
+        isRefreshing = refreshing, state = pull, modifier = Modifier.fillMaxSize(),
+        onRefresh = { tick(); scope.launch { refreshing = true; repo.refreshRaces(force = true); repo.refreshStandings(force = true); refreshing = false } },
+        indicator = {
+            PullToRefreshDefaults.Indicator(state = pull, isRefreshing = refreshing, modifier = Modifier.align(Alignment.TopCenter).padding(top = 36.dp),
+                containerColor = p.nav, color = p.accent)
+        }
+    ) {
+    LazyColumn(Modifier.fillMaxSize().ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
         item {
             Box(Modifier.fillMaxWidth()) {
                 // The next circuit bleeds off the right, behind the title (ref home: right:-44, top:120).
@@ -79,13 +107,25 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                     Row(Modifier.fillMaxWidth().padding(horizontal = F1Dim.screenPad).padding(top = 60.dp),
                         horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Formula 1", style = F1Type.body.copy(color = p.sec))
-                        Row(Modifier.clip(CircleShape).background(p.nav).clickable { onCalendar() }
-                            .padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(races.firstOrNull()?.season.orEmpty(), style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
-                            Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = "Calendar",
-                                tint = p.sec, modifier = Modifier.size(13.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (next != null) ReminderBell(reminderOn) {
+                                when {
+                                    reminderOn -> { wanted = false; Reminders.setEnabled(ctx, false); tick(); note = "Reminder off" }
+                                    !allowed -> ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    else -> { wanted = true; Reminders.setEnabled(ctx, true); tick(); note = "Reminder on, 1 h before lights out" }
+                                }
+                            }
+                            Box(Modifier.heightIn(min = 48.dp).pressable(role = Role.Button, onClickLabel = "Open the calendar") { onCalendar() },
+                                contentAlignment = Alignment.Center) {
+                                Row(Modifier.clip(CircleShape).background(p.nav)
+                                    .padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(races.firstOrNull()?.season.orEmpty(), style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
+                                    Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = "Calendar",
+                                        tint = p.sec, modifier = Modifier.size(13.dp))
+                                }
+                            }
                         }
                     }
                     if (next != null && d != null) Column(Modifier.clickable { onWeekend() }
@@ -104,25 +144,18 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                             CountBlock("%02d".format(d.toHours() % 24), "HOURS")
                             CountBlock("%02d".format(d.toMinutes() % 60), "MINS")
                         }
-                        Spacer(Modifier.height(5.dp))
-                        // The padding gives a tap area; the spacer above and the Drivers row below give back the same height.
-                        Text("Lights out ${next.date} · reminder ${if (reminderOn) "on" else "off"}",
-                            style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp),
-                            modifier = Modifier.clickable(role = Role.Switch, onClickLabel = "Race reminder") {
-                                if (reminderOn) { wanted = false; Reminders.setEnabled(ctx, false) }
-                                else if (!allowed) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                else { wanted = true; Reminders.setEnabled(ctx, true) }
-                            }.padding(vertical = 10.dp))
+                        Spacer(Modifier.height(15.dp))
+                        Text("Lights out ${next.date}", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
                     } else if (races.isNotEmpty()) SeasonComplete(races, onCalendar)
                 }
             }
         }
         item {
-            Row(Modifier.fillMaxWidth().padding(F1Dim.screenPad).padding(top = 2.dp),
+            Row(Modifier.fillMaxWidth().padding(F1Dim.screenPad).padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Text("Drivers", style = F1Type.section.copy(color = p.txt))
                 Text("View all", style = F1Type.meta.copy(color = p.accent, fontSize = 12.sp),
-                    modifier = Modifier.clickable { onStandings() })
+                    modifier = Modifier.pressable(role = Role.Button) { onStandings() })
             }
         }
         item {
@@ -139,7 +172,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
         item {
             Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 teams.take(3).forEach { t ->
-                    F1Card(Modifier.weight(1f).clickable { onConstructor(t.teamId) }, radius = 22) {
+                    F1Card(Modifier.weight(1f).pressable { onConstructor(t.teamId) }, radius = 22) {
                         Column(Modifier.padding(14.dp)) {
                             Box(Modifier.width(22.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
                                 .background(teamColour(repo.teamColour(t.teamId))))
@@ -157,6 +190,14 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
             Text("Showing cached data · $err", style = F1Type.meta.copy(color = p.sec),
                 modifier = Modifier.padding(F1Dim.screenPad), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
+    }
+    }
+    AnimatedVisibility(note != null, Modifier.align(Alignment.BottomCenter).padding(bottom = 118.dp),
+        enter = fadeIn(tween(220, easing = EaseOut)) + slideInVertically(tween(220, easing = EaseOut)) { it / 2 },
+        exit = fadeOut(tween(160))) {
+        Text(lastNote, style = F1Type.body.copy(color = p.canvas, fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+            modifier = Modifier.clip(CircleShape).background(p.txt).padding(horizontal = 16.dp, vertical = 10.dp))
+    }
     }
 }
 
@@ -325,7 +366,7 @@ private fun SeasonComplete(races: List<RaceEntity>, onClick: () -> Unit) {
 @Composable
 private fun DriverRow(repo: Repo, s: DriverStandingEntity, onClick: (String) -> Unit, showDivider: Boolean) {
     val p = LocalPalette.current
-    Column(Modifier.clickable { onClick(s.driverId) }) {
+    Column(Modifier.pressable { onClick(s.driverId) }) {
         Row(Modifier.padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("${s.position}", style = F1Type.meta.copy(color = p.sec), modifier = Modifier.width(18.dp))
             // Team colour lives HERE - in the data - never in chrome.
@@ -373,7 +414,7 @@ fun DriverScreen(repo: Repo, driverId: String, onTeam: (String) -> Unit, onRace:
                 // as a low-opacity overlay ON the driver. The bottom is dissolved by the
                 // name-fade below instead. Square box: chest sits at the box's bottom.
                 AsyncImage(
-                    model = Net.headshot(key), contentDescription = "${d.given} ${d.family}",
+                    model = fadeModel(LocalContext.current, Net.headshot(key)), contentDescription = "${d.given} ${d.family}",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.size(300.dp).align(Alignment.BottomCenter).offset(y = (-90).dp)
                 )
@@ -451,7 +492,9 @@ internal fun PointsByRound(csv: String, col: Color) {
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("${i + 1}", style = F1Type.label.copy(color = p.sec, fontSize = 9.sp))
+                    // Every second round, on one line: two-digit numbers used to wrap into "1 0".
+                    if ((i + 1) % 2 == 0) Text("${i + 1}", style = F1Type.label.copy(color = p.sec, fontSize = 9.sp), maxLines = 1, softWrap = false)
+                    else Text(" ", style = F1Type.label.copy(fontSize = 9.sp))
                 }
             }
         }
@@ -471,7 +514,9 @@ fun CalendarScreen(repo: Repo, onRace: (Int) -> Unit, onWeekend: () -> Unit, onC
     // Compose clamps a restored scroll position to the item count, so the list is not composed until the
     // rows exist. Otherwise Back from a race result lands at the top of the calendar.
     if (races.isEmpty()) { Box(Modifier.fillMaxSize().background(p.canvas)); return }
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), listState,
+    val collapsed by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120 } }
+    Box(Modifier.fillMaxSize().background(p.canvas)) {
+    LazyColumn(Modifier.fillMaxSize().ambient(p.isDark), listState,
         contentPadding = PaddingValues(top = 60.dp, bottom = 140.dp)) {
         item {
             Column(Modifier.padding(F1Dim.screenPad)) {
@@ -488,6 +533,8 @@ fun CalendarScreen(repo: Repo, onRace: (Int) -> Unit, onWeekend: () -> Unit, onC
             CalendarRow(r, done, isNext) { if (done) onRace(r.round) else if (isNext) onWeekend() else onCircuit(r.circuitId) }
         }
     }
+    CompactTitleBar("Calendar", collapsed, Modifier.align(Alignment.TopCenter))
+    }
 }
 
 @Composable
@@ -498,7 +545,7 @@ private fun CalendarRow(r: RaceEntity, done: Boolean, isNext: Boolean, onClick: 
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp)
             .clip(RoundedCornerShape(24.dp)).background(bg)
-            .clickable(role = Role.Button, onClick = onClick)
+            .pressable(role = Role.Button, onClick = onClick)
             .then(if (isNext) Modifier.border(0.7.dp, p.accent.copy(alpha = 0.35f), RoundedCornerShape(24.dp)) else Modifier)
             .alpha(if (done) 0.55f else 1f)
             .padding(horizontal = 16.dp, vertical = 13.dp),
@@ -544,52 +591,10 @@ fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
     }
 
     Column(Modifier.fillMaxSize().background(p.canvas).verticalScroll(rememberScrollState())) {
-        Box(Modifier.fillMaxWidth().height(430.dp).glow(col)) {
-            CarbonNumber("%02d".format(position), col, Modifier.matchParentSize())
-            // Both drivers, overlapping slightly, tappable through to their pages.
-            Row(Modifier.align(Alignment.TopCenter).padding(top = 128.dp)) {
-                teamDrivers.forEachIndexed { i, dr ->
-                    val key = repo.headshotKey(dr.driverId)
-                    Box(Modifier.width(150.dp).height(196.dp)
-                        .offset(x = if (i == 1) (-26).dp else 0.dp)
-                        .clickable { onDriver(dr.driverId) }) {
-                        if (key != null) {
-                            // Mask on a WRAPPER, not on AsyncImage: Coil composites its
-                            // painter in its own layer, so a DstIn rect on the image's own
-                            // modifier never bites. Crop so the chest reaches the box bottom
-                            // and fades off, instead of letterboxing above it.
-                            Box(Modifier.fillMaxSize().fadeBottom()) {
-                                AsyncImage(model = Net.headshot(key), contentDescription = dr.family,
-                                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                            }
-                        }
-                        Column(Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(dr.family, style = F1Type.label.copy(color = p.txt, fontSize = 11.sp))
-                            Text("#${dr.number ?: 0} · ${dr.points} PTS", style = F1Type.label.copy(color = p.sec, fontSize = 9.sp))
-                        }
-                    }
-                }
-            }
-            // Name-fade: dissolve the position number's base into the constructor name.
-            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(120.dp)
-                .background(Brush.verticalGradient(listOf(Color.Transparent, p.canvas))))
-            Column(Modifier.align(BiasAlignment(-1f, -0.15f)).zIndex(1f).padding(start = 14.dp).wrapContentWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("${team.points}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
-                Text("PTS", style = F1Type.label.copy(color = p.sec))
-            }
-            Column(Modifier.align(BiasAlignment(1f, -0.15f)).zIndex(1f).padding(end = 14.dp).wrapContentWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("${info.champs}", style = F1Type.display.copy(color = p.txt, fontSize = 38.sp), maxLines = 1, softWrap = false)
-                Text("TITLES", style = F1Type.label.copy(color = p.sec))
-            }
-            Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("CONSTRUCTOR · ${team.season}", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
-                Spacer(Modifier.height(5.dp))
-                Text(team.name, style = F1Type.name.copy(color = col))
-                Text(info.full, style = F1Type.meta.copy(color = p.sec))
-            }
-        }
+        TeamHero(
+            HeroTeam(team.name, "${team.season}", position, "${team.points}", "${info.champs}", repo.carFolder(teamId)),
+            teamDrivers.map { HeroDriver(it.driverId, it.family, repo.headshotKey(it.driverId)) }, col, onDriver,
+        )
         F1Card(Modifier.padding(horizontal = 20.dp).padding(top = 22.dp), radius = 26) {
             Row(Modifier.padding(vertical = 17.dp, horizontal = 10.dp)) {
                 StatBlock("%02d".format(wins), "WINS", Modifier.weight(1f))

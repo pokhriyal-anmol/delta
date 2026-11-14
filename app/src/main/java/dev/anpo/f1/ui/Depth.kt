@@ -44,7 +44,7 @@ private fun SectionTitle(text: String) {
 private fun LinkRow(label: String, value: String, onClick: () -> Unit) {
     val p = LocalPalette.current
     F1Card(Modifier.padding(horizontal = 20.dp).padding(top = 14.dp), radius = 26) {
-        Row(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp).padding(horizontal = 18.dp),
+        Row(Modifier.fillMaxWidth().pressable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp).padding(horizontal = 18.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Text(label, style = F1Type.meta.copy(color = p.sec), modifier = Modifier.weight(1f))
             Text("$value ›", style = F1Type.body.copy(color = p.accent, fontSize = 14.sp))
@@ -83,10 +83,10 @@ private fun HistoryCard(repo: Repo, kind: Int, id: String, career: CareerEntity?
                     h.position == 1, divider = i < history.lastIndex || missing.isNotEmpty())
             }
             if (missing.isNotEmpty()) {
-                Text(if (busy) "Loading seasons…" else "Load ${missing.size} more ${if (missing.size == 1) "season" else "seasons"}" + if (missing.size > 10) " (one request each)" else "",
-                    style = F1Type.body.copy(color = if (busy) p.sec else p.accent, fontSize = 13.sp), textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = !busy, role = Role.Button, onClick = onLoad)
-                        .heightIn(min = 52.dp).wrapContentHeight(Alignment.CenterVertically))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    PillButton(if (busy) "Loading seasons…" else "Load ${missing.size} more ${if (missing.size == 1) "season" else "seasons"}" + if (missing.size > 10) " (one request each)" else "",
+                        enabled = !busy, onClick = onLoad)
+                }
             }
         }
     }
@@ -143,7 +143,7 @@ private fun LastResults(rows: List<RaceResultEntity>, races: List<RaceEntity>, o
     F1Card(Modifier.padding(horizontal = 20.dp), radius = 26) {
         rows.forEachIndexed { i, r ->
             val race = races.firstOrNull { it.round == r.round }
-            Column(Modifier.clickable(role = Role.Button) { onRace(r.round) }) {
+            Column(Modifier.pressable(role = Role.Button) { onRace(r.round) }) {
                 Row(Modifier.heightIn(min = 56.dp).padding(horizontal = 18.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("R${r.round}", style = F1Type.meta.copy(color = p.sec), modifier = Modifier.width(40.dp))
                     Text(race?.name?.replace(" Grand Prix", " GP") ?: "Round ${r.round}", style = F1Type.body.copy(color = p.txt, fontSize = 14.sp),
