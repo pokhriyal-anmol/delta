@@ -82,7 +82,7 @@ android {
 }
 
 dependencies {
-    val compose = platform("androidx.compose:compose-bom:2024.06.00")
+    val compose = platform("androidx.compose:compose-bom:2024.09.03")
     implementation(compose)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
