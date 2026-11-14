@@ -1,85 +1,74 @@
-# F1 Tracker — Android
+# Delta
 
-The F1 tab, real. Jolpica for data, F1's CDN for headshots, the design system we settled on.
-Three of the ~26 dev-days in the V1 plan.
+A Formula 1 tracker for Android. Standings, drivers, teams, the race calendar and a 3D track,
+from free public data. Sideloaded, one user, no server, no background work.
+
+Latest release: v1.1.2. V2 (three tabs: Home, Championship, News) is in progress and
+planned in `.scratch/f1-v2/spec.md`; slices S0 to S3 are done, unreleased.
 
 ## Build it
 
-**No APK is attached, and here's exactly why:** the sandbox I work in is `aarch64`. Google ships
-`aapt2` — the Android resource compiler — as **x86-64 only**. There is no ARM Linux build. `d8`
-and `apksigner` run on the JVM and are fine; `aapt2` simply cannot execute. I tried emulating it
-via `qemu-user-static` and the package download kept truncating. Two blockers stacked, so I
-stopped rather than burn an hour and still fail.
-
-On your machine the toolchain is native and this takes about 90 seconds.
-
 ```bash
-# Android Studio: File > Open > this folder > Run.
-# Or headless (needs JDK 17 and ANDROID_HOME set):
-./gradlew assembleDebug
-# -> app/build/outputs/apk/debug/app-debug.apk
-```
-
-Sideload:
-```bash
+./gradlew assembleDebug      # needs JDK 17 and ANDROID_HOME
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-For a release build you need a signing key:
+Release builds are signed from `keystore.properties` (copy `keystore.properties.example`) and
+published with `./release.sh vX.Y.Z`. A release build refuses to run without the keystore.
+
+## What works today
+
+- Home: next race from the real calendar with a live countdown, driver standings, team tiles, the next circuit in 3D
+- Championship: Drivers and Constructors tables with a season selector back to 1950 and a champion marker; tap a row to open the driver or team
+- Driver: carbon race number, team-colour glow, real headshot, season stats, points by round
+- Constructor: both drivers, season stats, team facts
+- Calendar: every round of the season; tap a round for its result, its weekend or its circuit
+- Race result: the full classification for any finished round, laps down and retirements included
+- Circuit: the 3D track, derived length, laps, turns and the winner of every race held there
+- Race weekend: track, derived length, laps, turns and local-time sessions for any circuit that has an outline
+- Three tabs, each with its own back stack: Home, Championship, News (a placeholder)
+- After the final race Home shows "Season complete" instead of a countdown
+- Light and dark follow the phone
+
+## What does not work yet
+
+All of this is in the V2 spec with the evidence behind it.
+
+- No history on driver or team pages yet, and race results exist for the current season only
+- News is a placeholder until the feed list lands
+
+## Using the emulator from the Claude desktop app
+
+The desktop app streams iOS simulators only. For the Android emulator, `tools/emu-mirror.py` serves a
+live screen with tap, swipe, Back, Home, theme and "Install latest build" buttons on localhost:
+
 ```bash
-keytool -genkey -v -keystore ~/f1.jks -keyalg RSA -keysize 4096 -validity 10000 -alias f1
-# add signingConfigs to app/build.gradle.kts, then:
-./gradlew assembleRelease
+python3 tools/emu-mirror.py     # then open http://127.0.0.1:4391 in the browser pane
 ```
 
-## What works
+## Decisions that are decisions, not defaults
 
-- **Home** — next race pulled from the real calendar, live countdown, driver standings, constructor tiles
-- **Standings** — full driver table, tap through to any driver
-- **Driver** — carbon hero number, team-colour glow, real headshot in original colour
-- **Cache** — Room (`feeds.db`), daily TTL on standings, weekly on the calendar
-- **Rate limiter** — token bucket, persisted across process death
-- **Design system** — the whole thing as Compose tokens in `ui/Theme.kt`
+**`RateLimiter` is persisted, not in-memory.** Jolpica allows 200 requests an hour. An in-memory
+limiter resets on every process death, which is exactly when you would blow the quota.
 
-## What doesn't (yet)
+**`teamColour` and `headshotKey` are hardcoded maps, not fetches.** Both live in OpenF1, which
+goes completely dark during live sessions. Eleven teams and twenty-two drivers change once a
+year, so a constant is more reliable than a request.
 
-- Race weekend, race result, calendar, constructor page, head-to-head — designed in
-  `f1-tab-complete.html`, not ported
-- The 3D circuit — needs the MultiViewer fetch + a Compose `Path`. `f1-tab-complete.html` has
-  the real Spa geometry to lift
-- Tasks and Valorant tabs — nav icons are inert
-- **Untested.** I have no emulator or device here. Expect it to need a fix or two on first run.
-  Most likely spot: `CarbonNumber` uses `getPathForRange`, which is fussy across Compose versions.
+**`accentFor()` in `Theme.kt`.** Ferrari and Audi reds are within about 30 degrees of the app's
+red accent. Side by side they read as a rendering bug, so on a near-red team's page the chrome
+falls back to monochrome and the team owns the colour.
 
-## Things in here that are decisions, not defaults
-
-**`RateLimiter` is persisted, not in-memory.** Jolpica allows 200 req/hour. An in-memory limiter
-resets on every process death — which is exactly when you'd blow the quota. It'll bite you in
-development long before production: hot-reloading a screen that fetches on composition burns
-through 200 in minutes.
-
-**Two databases, never one.** `feeds.db` is a disposable cache excluded from backup. When
-`tasks.db` arrives it's the sacred one, with its own lifecycle and backup rules. Mixing them is
-how you end up restoring a stale cache over real data.
-
-**`teamColour` and `headshotKey` are hardcoded maps, not fetches.** Both live in OpenF1 — and
-OpenF1's free tier goes **completely dark during live sessions**, historical included. Your F1
-tab would break every race weekend. Eleven teams and twenty-two drivers change once a year; a
-constant is more reliable than a request. (The headshot path isn't derivable anyway: Antonelli
-sits under `K/` but is coded `ANDANT01`.)
-
-**`accentFor()` in `Theme.kt`.** Ferrari `#ED1131` and Audi `#F50537` are both within ~30° of
-Nothing Red `#D71921`. Adjacent, they read as a rendering bug. On a near-red team's page, chrome
-falls back to monochrome and lets the team own the colour.
-
-**Errors never clear the cache.** A failed refresh shows "Showing cached data · <reason>". Stale
-beats empty; a spinner that never resolves is the worst outcome.
+**Errors never clear the cache.** A failed refresh shows "Showing cached data" and the reason.
+Stale beats empty.
 
 ## Files worth reading first
 
 | File | Why |
 |---|---|
-| `SECURITY.md` | Why "hackers scanning the internet" can't reach this, and what's actually worth doing |
-| `ui/Theme.kt` | The design system. Every value was a decision. |
-| `data/RateLimiter.kt` | The thing that stops you getting 429'd on day one |
-| `data/Repo.kt` | Cache TTLs and the OpenF1 workarounds |
+| `CLAUDE.md` | Rules, verified API facts, current state |
+| `.scratch/f1-v2/spec.md` | The plan for V2 |
+| `design-system.md` | Every visual decision and why |
+| `SECURITY.md` | Why the internet cannot reach this app, and the News rules |
+| `ui/Theme.kt` | The design system as code |
+| `data/Repo.kt` | Cache lifetimes and the pinned maps |

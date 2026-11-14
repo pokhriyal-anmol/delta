@@ -13,8 +13,9 @@ Scanning finds things that **listen**. Shodan, mass port scans, botnets — they
 connecting to open ports on reachable IPs.
 
 This app **never listens**. It has no server, no open port, no bound socket, no DNS record,
-no public IP. It makes outbound HTTPS requests to `api.jolpi.ca` and `media.formula1.com`
-and reads the replies. That's the entire network surface.
+no public IP. It makes outbound HTTPS requests to `api.jolpi.ca` (results), `api.multiviewer.app` (track
+outlines), `media.formula1.com` (driver photos) and the news publishers' feed and image hosts
+(listed in `.scratch/f1-v2/spec.md`), and reads the replies. That's the entire network surface.
 
 An outbound-only client is not addressable from the internet. There is nothing to scan. Your
 phone is also behind carrier CGNAT or your home router's NAT, so even if the app *did* listen,
@@ -24,20 +25,10 @@ there'd be no route to it from outside.
 local-first, no-server architecture is a security decision as much as a data-ownership one:
 the server you never built is the server nobody can attack.
 
-## The one thing that *does* listen: Syncthing
+## Nothing listens, anywhere
 
-When Tasks lands, Syncthing (a **separate app** — not this code) opens a listening port for
-peer sync. That's your only inbound surface in the whole system.
-
-It's well-designed: TLS 1.3, and every peer must be explicitly allowlisted by device ID —
-an unknown device can connect but cannot sync. Still, three things to do when you get there:
-
-- **Turn off Global Discovery and Relaying.** Both announce you to Syncthing's public
-  infrastructure. You sync at home over Wi-Fi; you only need Local Discovery.
-- Never enable the Web GUI on `0.0.0.0`. Localhost only.
-- Keep the folder ignore-permissions off and the device list short.
-
-That's the honest place to spend your paranoia — not on this tab.
+There is no second app and no peer sync. The earlier plan had Syncthing for a Tasks tab, which
+was the only inbound surface in the system. Tasks is gone, so the surface is zero.
 
 ---
 
@@ -49,9 +40,9 @@ That's the honest place to spend your paranoia — not on this tab.
 | 2 | MITM via a proxy cert | `<certificates src="system"/>` only — **user-installed CAs are not trusted**. Blocks Burp/mitmproxy-style interception on a compromised device. | `network_security_config.xml` |
 | 3 | Another app reading your data | Zero exported components except the launcher activity. No content providers, no exported services/receivers. `InitializationProvider` removed. | `AndroidManifest.xml` |
 | 4 | Over-permissioning | Two permissions total: `INTERNET`, `ACCESS_NETWORK_STATE`. No storage, location, contacts, camera, mic. | `AndroidManifest.xml` |
-| 5 | Cache leaking to Google's cloud | `allowBackup=false` + explicit exclusion of `feeds.db` from cloud backup and device transfer. | `backup_rules.xml`, `data_extraction_rules.xml` |
+| 5 | Cache leaking to Google's cloud | `allowBackup=false` + explicit exclusion of `feeds.db` (results cache and news) from cloud backup and device transfer. | `backup_rules.xml`, `data_extraction_rules.xml` |
 | 6 | Reverse-engineering the APK | R8 shrink + obfuscate on release. | `app/build.gradle.kts` |
-| 7 | Secrets in the binary | There are none. Jolpica needs no auth; F1's CDN needs no auth. Nothing to steal. | — |
+| 7 | Secrets in the binary | There are none. Jolpica, MultiViewer, F1's CDN and the RSS feeds need no auth. Nothing to steal. | — |
 | 8 | URLs leaking to logcat | No logging interceptor. Any app with `READ_LOGS` could otherwise read your traffic. | `data/Api.kt` |
 | 9 | Third-party SDKs phoning home | None. No analytics, no crash reporting, no ads. Dependencies are Google/Square/JetBrains only. | `app/build.gradle.kts` |
 
@@ -82,24 +73,27 @@ it fails open rather than bricking.
 
 ---
 
-## What to do when Tasks and Twitch land
+## What to do when News lands
 
-- **Twitch token → Android Keystore**, not SharedPreferences. Use `EncryptedSharedPreferences`
-  (androidx.security-crypto) with a Keystore-backed master key. Device Code Flow means no
-  client secret in the APK — that's already the plan.
-- **tasks.db → consider SQLCipher.** Your phone is encrypted at rest already, so this only
-  matters against an unlocked-and-stolen device. Judgement call; probably not worth it.
-- **Op logs are plaintext JSONL on disk by design.** That's the point — any client can read
-  them. If that bothers you, encrypt the Syncthing folder, not the file format.
-- **The dictation model download must be checksummed.** You're fetching several hundred MB and
-  executing it via ONNX runtime. Verify SHA-256 against a pinned value. This is a *real* supply
-  chain risk and the only one in the whole project that worries me.
+Feeds are the first place this app parses text written by strangers. Treat every field as
+untrusted.
+
+- **Strip, never render.** Titles and snippets become plain text (tags removed, entities
+  decoded). No WebView, no HTML rendering, no JavaScript from a feed.
+- **Only open `https` links.** Reject any item whose URL is not `https`, so a feed cannot hand
+  the app an `intent:` or `file:` link. Open articles in the browser with a plain view intent.
+- **Cap everything.** Maximum feed size, items per feed and snippet length, so one broken feed
+  cannot fill the cache or stall the tab.
+- **Images are loaded by Coil only**, over https, from the host the feed named. A tracking
+  pixel is the realistic risk; the cost is the publisher seeing your IP on open, which any
+  browser visit does too.
+- **Fetch on tab open only.** No background refresh, which is also a security property.
 
 ## The realistic threat model, ranked
 
 1. **You install a malicious APK** — by far the likeliest way your phone gets compromised, and
    nothing in this project affects it. Sideload only what you built.
-2. **Syncthing misconfigured** with global discovery on and a loose device list.
+2. **A hostile feed item** (a link or text crafted to abuse the app). Covered by the News rules above.
 3. **Unlocked phone, physically taken.** Screen lock is your control, not code.
 4. **Compromised dependency.** Pin versions, use `./gradlew dependencies` occasionally.
 5. ~~Someone scanning the internet and finding your app~~ — **not possible.** No listener.

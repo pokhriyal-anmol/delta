@@ -7,7 +7,7 @@ were wrong at least once, and the reasons are what stop them regressing.
 rows). Palette from [Nothing OS](https://nothing.tech) (four greys, one red, no gradients).
 Roundness and shadows are ours — neither reference does them.
 
-Live reference: `f1-tab-complete.html`. Code: `f1tracker/app/src/main/java/dev/anpo/f1/ui/Theme.kt`.
+Live reference: `f1-tab-complete.html`. Code: `app/src/main/java/io/github/pokhriyal_anmol/f1/ui/Theme.kt`.
 
 ---
 
@@ -196,7 +196,7 @@ crop. Fade it:
 mask-image: linear-gradient(to bottom, #000 62%, rgba(0,0,0,.72) 82%, transparent 100%);
 ```
 
-**Alpha rule — this will bite again on Valorant art:**
+**Alpha rule. This will bite again on any art with transparency:**
 > `mix-blend-mode` blends the whole box. SVG filters blend the pixels.
 
 A `::after` overlay with `mix-blend-mode: color` painted a solid slab over the transparent areas
@@ -247,7 +247,7 @@ as grey.
 
 ## 10. Density
 
-Compact in data views (stat tables, results, standings), comfortable in Tasks. Colour carries
+Compact in data views (stat tables, results, standings, news rows). Colour carries
 information, so rows need less spacing to stay readable. A 22-driver classification fits one
 screen at 12px rows with 7px padding.
 
@@ -259,19 +259,18 @@ Floating pill, inset 20px, **30px off the bottom**, fully round, backdrop-blurre
 27dp**, no labels. Active = accent, inactive = `sec`. A tab bar welded to the bottom edge would
 be the one square element undoing all the roundness.
 
-Three tabs with distinct glyphs is fine icon-only. Re-check when Tasks and Valorant are real —
-icon-only navigation degrades fast past three or four destinations.
+Three tabs (Home, Championship, News) with distinct glyphs is fine icon-only. Icon-only
+navigation degrades fast past three or four destinations, so a fourth tab means adding labels.
 
 ---
 
 ## 12. Open questions
 
-1. **Does this survive the Tasks tab?** Poster type and ambient glow suit leisure — you *browse*
-   F1. You *use* tasks, ten times a day, one-handed, often stressed. A 38px "Book dentist" over
-   an orange glow will feel absurd. My call: keep canvas and ladder, **drop the glow and hero art
-   on Tasks.** Same family, quieter register. Box Box never had to solve this — single-purpose app.
-2. **Does it survive a stat table?** Untested. Valorant match detail is five rows × seven columns
-   with two team colours competing. That's the screen that could break the system.
+1. **Does it survive a stat table?** Untested. The Championship tables and the race
+   classification are the first dense tables, with team colour and position competing in every
+   row. Those are the screens that could break the system.
+2. **Does it survive a text-heavy list?** Untested. News rows carry a headline, a snippet and
+   a source on every line, from eight publishers with different image shapes.
 3. **The five-colour data problem** (§7).
 4. **Light mode duotone/glow** is acceptable, not great. Less headroom than dark, always will be.
 
