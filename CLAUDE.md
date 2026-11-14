@@ -74,12 +74,12 @@ differences and the chosen source set are in the spec. Feeds are untrusted input
 - **Depth on `#050506` comes from light, not shadow.** Inset hairlines. A drop shadow on
   near-black is invisible, which has already caused two "it's missing" bugs.
 - **Never `mix-blend-mode` on anything with alpha.** It blends the whole box. Use SVG filters.
-- Canvas is `#050506` not `#000` (shadows need headroom). Light canvas `#F5F5F3`, cards white.
+- Canvas is `#050506` not `#000` (shadows need headroom). Light canvas `#F8F8F5`, cards white.
 - Screenshots: always keep both `screenshots/light/` and `screenshots/dark/` current.
 
 ## Current state (V2 in progress, 2026-11-14)
 
-S0 to S4 of the V2 spec and the race reminder are committed and released as v1.2.0 (2026-11-14). S5 (News with a Reddit tab) is built and uncommitted. S0: three tabs (Home, Championship, News) each with its
+S0 to S4 of the V2 spec and the race reminder shipped as v1.2.0. S5 (News with a Reddit tab), S7 (polish pass) and S8 (team hero with F1's 2026 car, racing-line icon) shipped as v1.3.0 (2026-11-14). S0: three tabs (Home, Championship, News) each with its
 own back stack, season read from Jolpica's `current` alias, a season-complete Home. News is a
 placeholder until S5. S2: the Championship tab is the real page, with a Drivers and Constructors
 toggle, a season selector back to 1950 (past seasons fetched once, kept forever) and a champion
