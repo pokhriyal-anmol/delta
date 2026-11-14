@@ -1,7 +1,9 @@
-package dev.anpo.f1.ui
+package io.github.pokhriyal_anmol.f1.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -21,16 +23,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import dev.anpo.f1.R
-import dev.anpo.f1.data.*
+import io.github.pokhriyal_anmol.f1.R
+import io.github.pokhriyal_anmol.f1.data.*
 import coil.compose.AsyncImage
 import java.time.*
 import java.time.format.DateTimeFormatter
 
-private fun raceInstant(r: RaceEntity): Instant? = runCatching {
-    val t = (r.time ?: "12:00:00Z").removeSuffix("Z")
-    LocalDateTime.parse("${r.date}T$t").toInstant(ZoneOffset.UTC)
-}.getOrNull()
+private fun raceInstant(r: RaceEntity): Instant? = utcMillis(r.date, r.time)?.let(Instant::ofEpochMilli)
 
 @Composable
 fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
@@ -44,10 +43,11 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
     LaunchedEffect(Unit) { repo.refreshRaces(); repo.refreshStandings() }
 
     val next = races.firstOrNull { r -> raceInstant(r)?.isAfter(Instant.now()) == true }
-    val d = Duration.between(Instant.now(), raceInstant(next ?: return@HomeScreen) ?: Instant.now())
+    val d = next?.let { Duration.between(Instant.now(), raceInstant(it) ?: Instant.now()) }
 
-    var geo by remember(next.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
-    LaunchedEffect(next.circuitId) { repo.refreshCircuit(next.circuitId); geo = repo.circuit(next.circuitId) }
+    var geo by remember(next?.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
+    LaunchedEffect(next?.circuitId) { next?.let { repo.refreshCircuit(it.circuitId, it.season.toInt()); geo = repo.circuit(it.circuitId) } }
+    if (races.isEmpty()) return   // nothing is drawn until the calendar arrives, as before
 
     LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
         item {
@@ -64,12 +64,12 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                             .padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("2026", style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
+                            Text(races.firstOrNull()?.season.orEmpty(), style = F1Type.body.copy(color = p.txt, fontSize = 12.sp))
                             Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = "Calendar",
                                 tint = p.sec, modifier = Modifier.size(13.dp))
                         }
                     }
-                    Column(Modifier.clickable { onWeekend() }
+                    if (next != null && d != null) Column(Modifier.clickable { onWeekend() }
                         .padding(horizontal = F1Dim.screenPad).padding(top = 18.dp)) {
                         Text("Round ${next.round} · Next up", style = F1Type.meta.copy(color = p.sec))
                         Spacer(Modifier.height(8.dp))
@@ -87,7 +87,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                         }
                         Spacer(Modifier.height(15.dp))
                         Text("Lights out ${next.date} · reminder on", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
-                    }
+                    } else if (races.isNotEmpty()) SeasonComplete(races, onCalendar)
                 }
             }
         }
@@ -135,17 +135,27 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
 }
 
 @Composable
-fun WeekendScreen(repo: Repo) {
+fun WeekendScreen(repo: Repo, onCircuit: (String) -> Unit) {
     val p = LocalPalette.current
     val races by repo.races().collectAsState(emptyList())
     LaunchedEffect(Unit) { repo.refreshRaces() }
-    val next = races.firstOrNull { raceInstant(it)?.isAfter(Instant.now()) == true } ?: return
-    var geo by remember(next.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
-    LaunchedEffect(next.circuitId) {
-        repo.refreshCircuit(next.circuitId)
-        geo = repo.circuit(next.circuitId)
+    val next = races.firstOrNull { raceInstant(it)?.isAfter(Instant.now()) == true }
+    if (next == null) {
+        Box(Modifier.fillMaxSize().background(p.canvas), contentAlignment = Alignment.Center) {
+            Text(if (races.isEmpty()) "Loading the calendar…" else "No race weekend ahead",
+                style = F1Type.meta.copy(color = p.sec))
+        }
+        return
     }
-    val facts = repo.circuitFacts(next.circuitId)
+    var geo by remember(next.circuitId) { mutableStateOf<CircuitGeometryEntity?>(null) }
+    var laps by remember(next.circuitId) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(next.circuitId) {
+        repo.refreshCircuit(next.circuitId, next.season.toInt())
+        geo = repo.circuit(next.circuitId)
+        repo.refreshCircuitHistory(next.circuitId)
+        laps = repo.circuitLaps(next.circuitId)
+    }
+    val sessions = remember(next) { weekendSessions(next) }
     Column(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark).verticalScroll(rememberScrollState())) {
         Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
             Text("Round ${next.round} · Race weekend", style = F1Type.meta.copy(color = p.sec))
@@ -153,10 +163,13 @@ fun WeekendScreen(repo: Repo) {
             Text(next.name.replace(" Grand Prix", "\nGrand Prix"),
                 style = F1Type.display.copy(color = p.txt), lineHeight = 41.sp)
             Spacer(Modifier.height(8.dp))
-            Text(next.circuitName, style = F1Type.body.copy(color = p.accent, fontSize = 16.sp))
+            Text("${next.circuitName} ›", style = F1Type.body.copy(color = p.accent, fontSize = 16.sp),
+                // Padding sits inside the clickable so the spacing matches v1.1.2 (9dp to the date) while the tap area grows.
+                modifier = Modifier.clickable(role = Role.Button, onClickLabel = "Open circuit") { onCircuit(next.circuitId) }
+                    .padding(bottom = 6.dp))
             Text("${next.date}${next.country?.let { " · $it" } ?: ""}",
                 style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp),
-                modifier = Modifier.padding(top = 9.dp))
+                modifier = Modifier.padding(top = 3.dp))
         }
         val g = geo
         if (g != null) {
@@ -171,32 +184,33 @@ fun WeekendScreen(repo: Repo) {
             }
         }
 
-        if (facts != null) {
+        if (g != null || laps != null) {
             Column(Modifier.padding(horizontal = F1Dim.screenPad)) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(facts.lengthKm, style = F1Type.hero.copy(color = p.txt, fontSize = 50.sp),
-                        maxLines = 1, softWrap = false)
-                    Text("KM", style = F1Type.body.copy(color = p.sec),
-                        modifier = Modifier.padding(start = 6.dp, bottom = 7.dp))
+                if (g != null) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        // Derived from the outline, so it is approximate: one decimal, never three.
+                        Text(java.lang.String.format(java.util.Locale.ENGLISH, "%.1f", g.lengthKm),
+                            style = F1Type.hero.copy(color = p.txt, fontSize = 50.sp), maxLines = 1, softWrap = false)
+                        Text("KM", style = F1Type.body.copy(color = p.sec),
+                            modifier = Modifier.padding(start = 6.dp, bottom = 7.dp))
+                    }
+                    Text("Circuit length", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp),
+                        modifier = Modifier.padding(top = 5.dp))
+                    Spacer(Modifier.height(24.dp))
                 }
-                Text("Circuit length", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp),
-                    modifier = Modifier.padding(top = 5.dp))
-                Spacer(Modifier.height(24.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    CircuitStat("${facts.laps}", "", "No. of Laps", Modifier.weight(1f))
-                    CircuitStat("${g?.corners ?: 0}", "", "Turns", Modifier.weight(1f))
-                }
-                Spacer(Modifier.height(18.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    CircuitStat(facts.topSpeed, "KM/H", "Top Speed", Modifier.weight(1f))
-                    CircuitStat(facts.elevation, "M", "Elevation", Modifier.weight(1f))
+                    // A tile with no known value is left out rather than shown wrong.
+                    laps?.let { CircuitStat("$it", "", "No. of Laps", Modifier.weight(1f)) }
+                    g?.let { CircuitStat("${it.corners}", "", "Turns", Modifier.weight(1f)) }
                 }
             }
+        }
+        if (sessions.isNotEmpty()) {
             Text("Race Weekend", style = F1Type.section.copy(color = p.txt),
                 modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 34.dp, bottom = 6.dp))
             Column(Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                SPA_SESSIONS.forEach { SessionRow(it) }
+                sessions.forEach { SessionRow(it.toRow()) }
             }
         }
         Spacer(Modifier.height(140.dp))
@@ -205,18 +219,17 @@ fun WeekendScreen(repo: Repo) {
 
 private data class Session(val day: String, val dow: String, val name: String, val time: String, val race: Boolean)
 
-/** Belgian GP session times, pinned to match the spec. Real times live in the race's
- *  session sub-objects (FirstPractice/Qualifying/…); wire those in when other circuits land. */
-private val SPA_SESSIONS = listOf(
-    Session("17", "FRI", "Practice 1", "12:30 – 13:30", false),
-    Session("17", "FRI", "Practice 2", "16:00 – 17:00", false),
-    Session("18", "SAT", "Practice 3", "11:30 – 12:30", false),
-    Session("18", "SAT", "Qualifying", "15:00 – 16:00", false),
-    Session("19", "SUN", "Race", "15:00 · lights out", true),
-)
+/** Local to the phone, like a clock: the day, weekday and start time the user will actually see. */
+private fun WeekendSession.toRow(): Session {
+    val at = Instant.ofEpochMilli(startMs).atZone(ZoneId.systemDefault())
+    val time = "%02d:%02d".format(at.hour, at.minute)
+    return Session("${at.dayOfMonth}",
+        at.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.ENGLISH).uppercase(),
+        name, if (isRace) "$time · lights out" else time, isRace)
+}
 
 @Composable
-private fun CircuitStat(value: String, unit: String, label: String, modifier: Modifier = Modifier) {
+internal fun CircuitStat(value: String, unit: String, label: String, modifier: Modifier = Modifier) {
     val p = LocalPalette.current
     Column(modifier) {
         Row(verticalAlignment = Alignment.Bottom) {
@@ -259,6 +272,21 @@ private fun SessionRow(s: Session) {
     }
 }
 
+/** Shown in place of the countdown once no race lies ahead (the finale has run). */
+@Composable
+private fun SeasonComplete(races: List<RaceEntity>, onClick: () -> Unit) {
+    val p = LocalPalette.current
+    Column(Modifier.clickable(onClick = onClick).padding(horizontal = F1Dim.screenPad).padding(top = 18.dp)) {
+        Text("${races.first().season} season", style = F1Type.meta.copy(color = p.sec))
+        Spacer(Modifier.height(8.dp))
+        Text("Season\ncomplete", style = F1Type.display.copy(color = p.txt), lineHeight = 41.sp)
+        Spacer(Modifier.height(8.dp))
+        Text("${races.size} rounds${races.last().locality?.let { " · finale in $it" }.orEmpty()}", style = F1Type.body.copy(color = p.accent, fontSize = 16.sp))
+        Spacer(Modifier.height(15.dp))
+        Text("See the full calendar", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
+    }
+}
+
 @Composable private fun CountBlock(n: String, l: String) {
     val p = LocalPalette.current
     Column {
@@ -287,26 +315,6 @@ private fun DriverRow(repo: Repo, s: DriverStandingEntity, onClick: (String) -> 
             Text("${s.points}", style = F1Type.stat.copy(color = p.txt, fontSize = 16.sp))
         }
         if (showDivider) Box(Modifier.fillMaxWidth().height(0.5.dp).background(p.divider))
-    }
-}
-
-@Composable
-fun StandingsScreen(repo: Repo, onDriver: (String) -> Unit) {
-    val p = LocalPalette.current
-    val drivers by repo.drivers().collectAsState(emptyList())
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
-        item {
-            Column(Modifier.padding(F1Dim.screenPad).padding(top = 60.dp)) {
-                Text("2026 · Standings", style = F1Type.meta.copy(color = p.sec))
-                Spacer(Modifier.height(8.dp))
-                Text("Standings", style = F1Type.display.copy(color = p.txt))
-            }
-        }
-        item {
-            F1Card(Modifier.padding(horizontal = 20.dp)) {
-                drivers.forEachIndexed { i, s -> DriverRow(repo, s, onDriver, i < drivers.lastIndex) }
-            }
-        }
     }
 }
 
@@ -367,7 +375,7 @@ fun DriverScreen(repo: Repo, driverId: String) {
             }
             Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("2026 SEASON · ${d.team.uppercase()}", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
+                Text("${d.season} SEASON · ${d.team.uppercase()}", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
                 Spacer(Modifier.height(5.dp))
                 Text(d.given.split(" ").last(), style = F1Type.name.copy(color = p.txt))
                 Text(d.family, style = F1Type.name.copy(color = col))
@@ -427,38 +435,44 @@ private fun PointsByRound(csv: String, col: Color) {
 /* ---------- Calendar (F-09) ---------- */
 
 @Composable
-fun CalendarScreen(repo: Repo) {
+fun CalendarScreen(repo: Repo, onRace: (Int) -> Unit, onWeekend: () -> Unit, onCircuit: (String) -> Unit) {
     val p = LocalPalette.current
     val races by repo.races().collectAsState(emptyList())
     LaunchedEffect(Unit) { repo.refreshRaces() }
     val now = Instant.now()
     val nextRound = races.firstOrNull { raceInstant(it)?.isAfter(now) == true }?.round
-    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark),
+    val listState = rememberLazyListState()
+    // Compose clamps a restored scroll position to the item count, so the list is not composed until the
+    // rows exist. Otherwise Back from a race result lands at the top of the calendar.
+    if (races.isEmpty()) { Box(Modifier.fillMaxSize().background(p.canvas)); return }
+    LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), listState,
         contentPadding = PaddingValues(top = 60.dp, bottom = 140.dp)) {
         item {
             Column(Modifier.padding(F1Dim.screenPad)) {
                 Text("${races.size} rounds", style = F1Type.meta.copy(color = p.sec))
                 Spacer(Modifier.height(8.dp))
-                Text("2026\nCalendar", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
+                Text("${races.firstOrNull()?.season.orEmpty()}\nCalendar", style = F1Type.display.copy(color = p.txt, fontSize = 42.sp), lineHeight = 43.sp)
             }
         }
         item { Spacer(Modifier.height(20.dp)) }
         items(races) { r ->
-            CalendarRow(r,
-                done = raceInstant(r)?.isBefore(now) == true,
-                isNext = r.round == nextRound)
+            val done = raceInstant(r)?.isBefore(now) == true
+            val isNext = r.round == nextRound
+            // Past rounds open the result, the next one its weekend, later ones the circuit.
+            CalendarRow(r, done, isNext) { if (done) onRace(r.round) else if (isNext) onWeekend() else onCircuit(r.circuitId) }
         }
     }
 }
 
 @Composable
-private fun CalendarRow(r: RaceEntity, done: Boolean, isNext: Boolean) {
+private fun CalendarRow(r: RaceEntity, done: Boolean, isNext: Boolean, onClick: () -> Unit) {
     val p = LocalPalette.current
     val bg = if (isNext) (if (p.isDark) Color(0xFF1A1216) else Color(0xFFFFF4F4)) else p.card
     val date = runCatching { LocalDate.parse(r.date).format(DateTimeFormatter.ofPattern("d MMM")) }.getOrDefault(r.date)
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 5.dp)
             .clip(RoundedCornerShape(24.dp)).background(bg)
+            .clickable(role = Role.Button, onClick = onClick)
             .then(if (isNext) Modifier.border(0.7.dp, p.accent.copy(alpha = 0.35f), RoundedCornerShape(24.dp)) else Modifier)
             .alpha(if (done) 0.55f else 1f)
             .padding(horizontal = 16.dp, vertical = 13.dp),
@@ -544,7 +558,7 @@ fun ConstructorScreen(repo: Repo, teamId: String, onDriver: (String) -> Unit) {
                 Text("TITLES", style = F1Type.label.copy(color = p.sec))
             }
             Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("CONSTRUCTOR · 2026", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
+                Text("CONSTRUCTOR · ${team.season}", style = F1Type.label.copy(color = p.sec, fontSize = 11.sp))
                 Spacer(Modifier.height(5.dp))
                 Text(team.name, style = F1Type.name.copy(color = col))
                 Text(info.full, style = F1Type.meta.copy(color = p.sec))

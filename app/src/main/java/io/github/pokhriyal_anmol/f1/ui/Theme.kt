@@ -1,4 +1,4 @@
-package dev.anpo.f1.ui
+package io.github.pokhriyal_anmol.f1.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.anpo.f1.R
+import io.github.pokhriyal_anmol.f1.R
 
 /**
  * Two Inter families split by optical size, same idea as SF Text vs SF Display: the

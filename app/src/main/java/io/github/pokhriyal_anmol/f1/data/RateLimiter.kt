@@ -1,9 +1,17 @@
-package dev.anpo.f1.data
+package io.github.pokhriyal_anmol.f1.data
 
 import android.content.Context
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
+/**
+ * Tokens after time passes. A clock that moved backwards (a manual change, a bad network time sync)
+ * counts as no time passing. Treating it as negative time once froze every request for as long as
+ * the clock had been set back.
+ */
+internal fun refilled(tokens: Double, lastMs: Long, nowMs: Long, capacity: Int, perHour: Int): Double =
+    (tokens + (nowMs - lastMs).coerceAtLeast(0L) / 3_600_000.0 * perHour).coerceAtMost(capacity.toDouble())
 
 /**
  * Jolpica allows 200 requests/hour unauthenticated. That is NOT generous, and it
@@ -33,17 +41,13 @@ class RateLimiter(
     suspend fun acquire() = mutex.withLock {
         while (true) {
             val now = System.currentTimeMillis()
-            val elapsedH = (now - last) / 3_600_000.0
-            val refilled = (tokens + elapsedH * refillPerHour).coerceAtMost(capacity.toDouble())
-            if (refilled >= 1.0) { tokens = refilled - 1.0; last = now; return@withLock }
+            val available = refilled(tokens, last, now, capacity, refillPerHour)
+            if (available >= 1.0) { tokens = available - 1.0; last = now; return@withLock }
             // Wait for the next token to drip in.
-            val needH = (1.0 - refilled) / refillPerHour
+            val needH = (1.0 - available) / refillPerHour
             delay((needH * 3_600_000).toLong().coerceAtLeast(250L))
         }
     }
 
-    fun remaining(): Int {
-        val elapsedH = (System.currentTimeMillis() - last) / 3_600_000.0
-        return (tokens + elapsedH * refillPerHour).coerceAtMost(capacity.toDouble()).toInt()
-    }
+    fun remaining(): Int = refilled(tokens, last, System.currentTimeMillis(), capacity, refillPerHour).toInt()
 }

@@ -1,4 +1,4 @@
-package dev.anpo.f1.data
+package io.github.pokhriyal_anmol.f1.data
 
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -26,6 +26,10 @@ interface JolpicaApi {
     /** Season results, paginated. Jolpica CAPS limit at 100 regardless of what you ask
      *  for, so a full season (~200 rows) is 2 requests via offset. Cached daily, this
      *  derives podiums, poles, DNFs and points-per-round for every driver. */
+    /** Every winner at a circuit, oldest first. Each carries the laps the winner completed. */
+    @GET("ergast/f1/circuits/{id}/results/1/")
+    suspend fun circuitWinners(@Path("id") circuitId: String, @Query("limit") limit: Int = 100): JolpicaEnvelope
+
     @GET("ergast/f1/{season}/results/")
     suspend fun seasonResults(@Path("season") season: String,
         @Query("limit") limit: Int = 100, @Query("offset") offset: Int = 0): JolpicaEnvelope
@@ -35,7 +39,7 @@ interface MultiViewerApi {
     /** Circuit outline for a given MultiViewer circuit key and year. Free, no auth,
      *  real geometry for all 22 tracks (Spa = key 7). ~1005 points + rotation. */
     @GET("api/v1/circuits/{key}/{year}")
-    suspend fun circuit(@Path("key") key: Int, @Path("year") year: Int = 2026): MvCircuit
+    suspend fun circuit(@Path("key") key: Int, @Path("year") year: Int): MvCircuit
 }
 
 object Net {

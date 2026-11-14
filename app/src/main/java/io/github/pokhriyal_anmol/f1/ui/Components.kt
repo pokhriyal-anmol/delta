@@ -1,4 +1,4 @@
-package dev.anpo.f1.ui
+package io.github.pokhriyal_anmol.f1.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.translate
 import android.graphics.BlurMaskFilter
 import androidx.compose.ui.text.style.TextAlign
-import dev.anpo.f1.data.CircuitGeometryEntity
+import io.github.pokhriyal_anmol.f1.data.CircuitGeometryEntity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
@@ -171,7 +171,7 @@ fun Circuit3D(geo: CircuitGeometryEntity, modifier: Modifier = Modifier) {
         }
         drawPath(path, Color(0xFF1C1C20), style = Stroke(10.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
         drawPath(path, Color(0xFFA7A7A7), style = Stroke(4.6.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-        drawPath(eau, Color(0xFFD71921), style = Stroke(4.8.dp.toPx(), cap = StrokeCap.Round))
+        if (geo.eauEnd > geo.eauStart) drawPath(eau, Color(0xFFD71921), style = Stroke(4.8.dp.toPx(), cap = StrokeCap.Round))
         drawCircle(Color.White, 3.2.dp.toPx(), pt(0))
     }
 }

@@ -1,11 +1,8 @@
-package dev.anpo.f1.data
+package io.github.pokhriyal_anmol.f1.data
 
 import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-
-/** Static per-circuit facts the geometry API doesn't carry. */
-data class CircuitFacts(val lengthKm: String, val laps: Int, val topSpeed: String, val elevation: String)
 
 /** Static constructor facts (name/base/power unit/history) not in the standings API. */
 data class ConstructorInfo(val full: String, val base: String, val pu: String, val since: Int, val champs: Int)
@@ -13,14 +10,15 @@ data class ConstructorInfo(val full: String, val base: String, val pu: String, v
 class Repo(ctx: Context) {
     private val dao = FeedsDb.get(ctx).dao()
     private val limiter = RateLimiter(ctx, "jolpica", capacity = 200, refillPerHour = 200)
-    val season = "2026"
+    /** Jolpica resolves "current" to the live season server-side; screens read the season off the cached rows. */
+    private val current = "current"
 
     val error = MutableStateFlow<String?>(null)
     val loading = MutableStateFlow(false)
 
-    fun drivers(): Flow<List<DriverStandingEntity>> = dao.drivers(season)
-    fun teams(): Flow<List<ConstructorStandingEntity>> = dao.teams(season)
-    fun races(): Flow<List<RaceEntity>> = dao.races(season)
+    fun drivers(): Flow<List<DriverStandingEntity>> = dao.drivers()
+    fun teams(): Flow<List<ConstructorStandingEntity>> = dao.teams()
+    fun races(): Flow<List<RaceEntity>> = dao.races()
     suspend fun driver(id: String) = dao.driver(id)
     suspend fun driverStat(id: String) = dao.driverStat(id)
     fun tokensLeft() = limiter.remaining()
@@ -30,18 +28,18 @@ class Repo(ctx: Context) {
     /** Current-season standings change only after a race. Daily TTL is plenty and
      *  keeps us at roughly 20 requests a WEEK against a 200/hour ceiling. */
     suspend fun refreshStandings(force: Boolean = false) {
-        val age = dao.driversFetchedAt(season)
+        val age = dao.driversFetchedAt()
         if (!force && age != null && System.currentTimeMillis() - age < DAY) return
         runCatching {
             loading.value = true
             limiter.acquire()
-            val d = Net.jolpica.driverStandings(season, 30)
+            val d = Net.jolpica.driverStandings(current, 30)
             val now = System.currentTimeMillis()
             d.data.standings?.lists?.firstOrNull()?.let { l ->
                 dao.putDrivers(l.drivers.map { s ->
                     DriverStandingEntity(
                         driverId = s.driver.driverId, season = l.season, round = l.round,
-                        position = s.position.toIntOrNull() ?: 99, points = s.points.toIntOrNull() ?: 0,
+                        position = s.position?.toIntOrNull() ?: 99, points = s.points.toIntOrNull() ?: 0,
                         wins = s.wins.toIntOrNull() ?: 0,
                         given = s.driver.givenName, family = s.driver.familyName,
                         code = s.driver.code, number = s.driver.permanentNumber?.toIntOrNull(),
@@ -52,12 +50,12 @@ class Repo(ctx: Context) {
                 })
             }
             limiter.acquire()
-            val c = Net.jolpica.constructorStandings(season, 30)
+            val c = Net.jolpica.constructorStandings(current, 30)
             c.data.standings?.lists?.firstOrNull()?.let { l ->
                 dao.putTeams(l.constructors.map { s ->
                     ConstructorStandingEntity(
                         teamId = s.team.constructorId, season = l.season,
-                        position = s.position.toIntOrNull() ?: 99, points = s.points.toIntOrNull() ?: 0,
+                        position = s.position?.toIntOrNull() ?: 99, points = s.points.toIntOrNull() ?: 0,
                         wins = s.wins.toIntOrNull() ?: 0, name = s.team.name, fetchedAt = now,
                     )
                 })
@@ -73,7 +71,7 @@ class Repo(ctx: Context) {
     /** Per-driver podiums / poles / DNFs, derived from the whole season's results in
      *  one request. Standings change only after a race, so a daily TTL is plenty. */
     suspend fun refreshResults(force: Boolean = false) {
-        val age = dao.statsFetchedAt(season)
+        val age = dao.statsFetchedAt()
         if (!force && age != null && System.currentTimeMillis() - age < DAY) return
         runCatching {
             // Jolpica caps limit at 100, so page through with offset until we have `total`.
@@ -81,7 +79,7 @@ class Repo(ctx: Context) {
             var offset = 0; var total = Int.MAX_VALUE
             while (offset < total) {
                 limiter.acquire()
-                val page = Net.jolpica.seasonResults(season, 100, offset)
+                val page = Net.jolpica.seasonResults(current, 100, offset)
                 total = page.data.total?.toIntOrNull() ?: 0
                 val pageRaces = page.data.races?.races.orEmpty()
                 if (pageRaces.isEmpty()) break
@@ -103,11 +101,12 @@ class Repo(ctx: Context) {
                     if (rnd != null) perRound.getOrPut(id) { HashMap() }[rnd] = res.points.toIntOrNull() ?: 0
                 }
             }
+            dao.putRaceResults(races.flatMap { resultRows(it) })
             val maxRound = races.mapNotNull { it.round.toIntOrNull() }.maxOrNull() ?: 0
             if (agg.isNotEmpty()) dao.putStats(agg.map { (id, a) ->
                 val rounds = perRound[id]
                 val csv = (1..maxRound).joinToString(",") { (rounds?.get(it) ?: 0).toString() }
-                DriverSeasonStat(id, season, podiums = a[0], poles = a[1], dnfs = a[2],
+                DriverSeasonStat(id, races.first().season, podiums = a[0], poles = a[1], dnfs = a[2],
                     roundPoints = csv, fetchedAt = now)
             })
             error.value = null
@@ -116,11 +115,11 @@ class Repo(ctx: Context) {
 
     /** The calendar is fixed at season start - fetch once, keep for a week. */
     suspend fun refreshRaces(force: Boolean = false) {
-        val age = dao.racesFetchedAt(season)
+        val age = dao.racesFetchedAt()
         if (!force && age != null && System.currentTimeMillis() - age < 7 * DAY) return
         runCatching {
             limiter.acquire()
-            val r = Net.jolpica.races(season, 30)
+            val r = Net.jolpica.races(current, 30)
             val now = System.currentTimeMillis()
             dao.putRaces(r.data.races?.races.orEmpty().map { x ->
                 RaceEntity(
@@ -128,6 +127,8 @@ class Repo(ctx: Context) {
                     name = x.raceName, date = x.date, time = x.time,
                     circuitId = x.circuit.circuitId, circuitName = x.circuit.circuitName,
                     locality = x.circuit.location.locality, country = x.circuit.location.country,
+                    fp1 = x.fp1.millis(), fp2 = x.fp2.millis(), fp3 = x.fp3.millis(),
+                    quali = x.quali.millis(), sprintQuali = x.sprintQuali.millis(), sprint = x.sprint.millis(),
                     fetchedAt = now,
                 )
             })
@@ -164,29 +165,21 @@ class Repo(ctx: Context) {
      *  code disagree (Antonelli lives under K/ but is coded ANDANT01). Pinned. */
     fun headshotKey(driverId: String): String? = HEADSHOTS[driverId]
 
-    /** Ergast circuitId -> MultiViewer circuit key. Spa=7 is confirmed; the rest of
-     *  the 2026 calendar still needs verifying against the MV circuits list, so an
-     *  unknown id returns null and the circuit hero is simply skipped (never wrong). */
+    /** Ergast circuitId -> MultiViewer circuit key, or null when MultiViewer has no outline
+     *  (the screen then says so instead of drawing something wrong). */
     fun circuitKey(circuitId: String): Int? = CIRCUIT_KEYS[circuitId]
 
     suspend fun circuit(circuitId: String) = dao.circuit(circuitId)
 
-    /** Static circuit facts not carried by the geometry endpoint (length/laps/top
-     *  speed/elevation). Turns come from the corner count instead. Spa only for now,
-     *  same pinned-data pattern as teamColour/headshotKey. */
-    fun circuitFacts(circuitId: String): CircuitFacts? = when (circuitId) {
-        "spa" -> CircuitFacts(lengthKm = "7.004", laps = 44, topSpeed = "359.7", elevation = "102.2")
-        else -> null
-    }
-
     /** Geometry is immutable - fetch once, keep forever. Decimated to every 2nd point
      *  (harder loses La Source and the Bus Stop chicane). Rotation stored, applied at draw.
-     *  Eau Rouge -> Raidillon is derived from corners 2..5, not magic point indices. */
-    suspend fun refreshCircuit(circuitId: String) {
+     *  The length comes from the full outline, before decimation. Eau Rouge -> Raidillon is
+     *  derived from corners 2..5, which is only true at Spa, so every other circuit gets none. */
+    suspend fun refreshCircuit(circuitId: String, year: Int) {
         if (dao.circuit(circuitId) != null) return
         val key = circuitKey(circuitId) ?: return
         runCatching {
-            val c = Net.multiviewer.circuit(key)
+            val c = Net.multiviewer.circuit(key, year)
             val xs = c.x.filterIndexed { i, _ -> i % 2 == 0 }
             val ys = c.y.filterIndexed { i, _ -> i % 2 == 0 }
             fun nearest(pos: MvPos): Int = xs.indices.minByOrNull { i ->
@@ -195,20 +188,70 @@ class Repo(ctx: Context) {
             fun cornerPos(n: Int) = c.corners.firstOrNull { it.number == n }?.pos
             val a = cornerPos(2)?.let { nearest(it) } ?: 0
             val b = cornerPos(5)?.let { nearest(it) } ?: 0
+            val spa = circuitId == "spa"
             dao.putCircuit(CircuitGeometryEntity(
                 circuitId, c.rotation,
                 xs = xs.joinToString(",") { it.toString() },
                 ys = ys.joinToString(",") { it.toString() },
                 corners = c.corners.size,
-                eauStart = minOf(a, b), eauEnd = maxOf(a, b),
+                eauStart = if (spa) minOf(a, b) else 0, eauEnd = if (spa) maxOf(a, b) else 0,
+                lengthKm = trackLengthKm(c.x, c.y),
                 fetchedAt = System.currentTimeMillis()))
         }.onFailure { error.value = it.message ?: "Couldn't reach MultiViewer" }
     }
 
+    fun archive(season: String, kind: Int): Flow<List<ArchiveStandingEntity>> = dao.archive(season, kind)
+
+    /**
+     * Final standings for a past season, one request per table, kept forever. Both tables are fetched
+     * together so the toggle never waits. There is no constructors' table before 1958.
+     */
+    suspend fun refreshArchive(season: String) {
+        val year = season.toIntOrNull() ?: return
+        runCatching {
+            if (dao.archiveCount(season, KIND_DRIVER) == 0) {
+                limiter.acquire()
+                val list = Net.jolpica.driverStandings(season, 100).data.standings?.lists?.firstOrNull()
+                if (list != null) dao.putArchive(driverArchive(list, System.currentTimeMillis()))
+            }
+            if (year >= FIRST_CONSTRUCTORS_SEASON && dao.archiveCount(season, KIND_TEAM) == 0) {
+                limiter.acquire()
+                val list = Net.jolpica.constructorStandings(season, 100).data.standings?.lists?.firstOrNull()
+                if (list != null) dao.putArchive(teamArchive(list, System.currentTimeMillis()))
+            }
+            error.value = null
+        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+    }
+
+    fun raceResult(season: String, round: Int): Flow<List<RaceResultEntity>> = dao.raceResult(season, round)
+    fun winners(circuitId: String): Flow<List<CircuitWinnerEntity>> = dao.winners(circuitId)
+
+    /** Scheduled laps and past winners, from one request. Kept forever once known; a circuit with no
+     *  history yet (0) is retried weekly. */
+    suspend fun refreshCircuitHistory(circuitId: String) {
+        val known = dao.circuitFact(circuitId)
+        if (known != null && (known.laps > 0 || System.currentTimeMillis() - known.fetchedAt < 7 * DAY)) return
+        runCatching {
+            limiter.acquire()
+            val winners = Net.jolpica.circuitWinners(circuitId).data.races?.races.orEmpty()
+            dao.putWinners(winnerRows(circuitId, winners))
+            dao.putCircuitFact(CircuitFactEntity(circuitId, scheduledLaps(winners) ?: 0, System.currentTimeMillis()))
+        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+    }
+
+    /** Null when unknown, so the screen can leave the tile out instead of showing a wrong number. */
+    suspend fun circuitLaps(circuitId: String): Int? = dao.circuitFact(circuitId)?.laps?.takeIf { it > 0 }
+
     companion object {
-        /** MultiViewer circuit keys. Spa=7 is verified; extend as the other 2026
-         *  circuitIds are confirmed (same endpoint, swap the key). */
-        private val CIRCUIT_KEYS = mapOf("spa" to 7)
+        /** Ergast circuitId -> MultiViewer key. Measured 2026-11-14: each of these returns a 2026
+         *  outline. Madring and Sepang have none, so they are absent and the screen says so. */
+        private val CIRCUIT_KEYS = mapOf(
+            "albert_park" to 10, "shanghai" to 49, "suzuka" to 46, "miami" to 151, "villeneuve" to 23,
+            "monaco" to 22, "catalunya" to 15, "red_bull_ring" to 19, "silverstone" to 2, "spa" to 7,
+            "hungaroring" to 4, "zandvoort" to 55, "monza" to 39, "baku" to 144, "marina_bay" to 61,
+            "americas" to 9, "rodriguez" to 65, "interlagos" to 14, "vegas" to 152, "losail" to 150,
+            "yas_marina" to 70,
+        )
 
         private val HEADSHOTS = mapOf(
             "antonelli" to "K/ANDANT01_Kimi_Antonelli/andant01",
@@ -236,3 +279,5 @@ class Repo(ctx: Context) {
         )
     }
 }
+
+private fun JSession?.millis(): Long? = this?.let { utcMillis(it.date, it.time) }
