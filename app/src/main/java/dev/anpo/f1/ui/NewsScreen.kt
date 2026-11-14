@@ -42,7 +42,7 @@ private const val PRESS = 0
 private const val REDDIT = 1
 
 /** Only https links leave the app, and only to the browser (or the Reddit app) through a plain view intent. */
-private fun open(ctx: Context, url: String) {
+internal fun open(ctx: Context, url: String) {
     if (httpsUrl(url) == null) return
     try { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: ActivityNotFoundException) { }
 }

@@ -4,8 +4,8 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 
 V="${1:?usage: ./release.sh v1.1}"
 
-./gradlew assembleRelease
-APK=app/build/outputs/apk/release/app-release.apk
+./gradlew assembleDirectRelease
+APK=app/build/outputs/apk/direct/release/app-direct-release.apk
 
 # APKs use v2/v3 signing — keytool CANNOT read these. apksigner only.
 SDK=$(grep '^sdk.dir=' local.properties | cut -d= -f2-)

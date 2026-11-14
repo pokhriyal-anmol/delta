@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlparse
 SERIAL = os.environ.get("EMU_SERIAL", "emulator-5554")
 PORT = int(os.environ.get("EMU_PORT", "4391"))
 APP = "dev.anpo.f1"
-APK = os.path.join(os.path.dirname(__file__), "..", "app/build/outputs/apk/debug/app-debug.apk")
+APK = os.path.join(os.path.dirname(__file__), "..", "app/build/outputs/apk/direct/debug/app-direct-debug.apk")
 KEYS = {"BACK": "KEYCODE_BACK", "HOME": "KEYCODE_HOME", "RECENTS": "KEYCODE_APP_SWITCH", "ENTER": "KEYCODE_ENTER", "DEL": "KEYCODE_DEL"}
 
 

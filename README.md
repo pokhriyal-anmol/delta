@@ -1,16 +1,18 @@
 # Delta
 
 A Formula 1 tracker for Android. Standings, drivers, teams, the race calendar and a 3D track,
-from free public data. Sideloaded, one user, no server, no background work.
+from free public data. No account, no ads, no server, no background work.
 
-Latest release: v1.3.0 (News with a Reddit tab, the polish pass, the team hero with the 2026 car, a new icon). V2 is
+Unofficial fan app. Not affiliated with Formula 1, Formula One Group or any team.
+
+Latest release: v1.3.1 (v1.3.0 plus the AGPL licence, the two build flavors and the support note at the bottom of Home). V2 is
 planned in `.scratch/f1-v2/spec.md`.
 
 ## Build it
 
 ```bash
-./gradlew assembleDebug      # needs JDK 17 and ANDROID_HOME
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDirectDebug      # needs JDK 17 and ANDROID_HOME
+adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 ```
 
 Release builds are signed from `keystore.properties` (copy `keystore.properties.example`) and
@@ -75,3 +77,17 @@ Stale beats empty.
 | `SECURITY.md` | Why the internet cannot reach this app, and the News rules |
 | `ui/Theme.kt` | The design system as code |
 | `data/Repo.kt` | Cache lifetimes and the pinned maps |
+
+## Licence
+
+The code is AGPL-3.0 (`LICENSE`). The name, the icon and everything from Formula 1 are not covered;
+see `NOTICE`. Contributing: `CONTRIBUTING.md`.
+
+## Support
+
+If the app earns a place on your phone: [buymeacoffee.com/anmolpokhriyal](https://buymeacoffee.com/anmolpokhriyal). It stays free, with no ads and no account.
+
+## Two builds
+
+`direct` is the APK published on GitHub and may show a small support note at the bottom of Home
+(set `supportUrl` in `gradle.properties`). `play` is the Play Store build and has no such note.

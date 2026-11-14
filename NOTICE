@@ -1,0 +1,26 @@
+Delta
+Copyright (C) 2026 pokhriyal-anmol
+
+The source code in this repository is licensed under the GNU Affero General Public License,
+version 3 (see LICENSE).
+
+What the licence does NOT give you
+
+- The name "Delta" and the app icon. If you fork this, give your version its own name and icon.
+- Formula 1's material. Driver photos and 2026 car images are loaded at run time from
+  media.formula1.com and belong to Formula One Group and the teams. Team names, colours and any
+  logos belong to their owners. Nothing from F1 is stored in this repository.
+- Data. Results come from Jolpica (api.jolpi.ca), circuit outlines from MultiViewer, headlines and
+  links from the news publishers named in the app, and posts from Reddit. Each is subject to its own
+  terms and none is relicensed here.
+
+This is an unofficial fan app. It is not affiliated with, endorsed by or connected to Formula 1,
+Formula One Group, the FIA, any team or any driver.
+
+Third-party material bundled in the app
+
+- Inter typeface (five weights in app/src/main/res/font): SIL Open Font License 1.1.
+- Tabler Icons (the outline drawables in app/src/main/res/drawable, except the launcher icon):
+  MIT License.
+- Libraries (Jetpack Compose, Room, Retrofit, OkHttp, Coil, kotlinx.serialization and others):
+  Apache License 2.0 or compatible. Run ./gradlew :app:dependencies for the full list.

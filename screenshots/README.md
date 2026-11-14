@@ -25,6 +25,7 @@ Same filenames in each:
 | `11-championship-1988.png` | Championship — a past season (1988) with the champion marker |
 | `12-race-result.png` | Race result: Belgian GP classification |
 | `13-circuit.png` | Circuit page: Spa with Eau Rouge, facts and past winners |
+| `18-home-footer.png` | Home scrolled to the bottom: the support note (direct build only) and the unofficial line |
 | `17-season-sheet.png` | Championship: the season picker as a bottom sheet |
 | `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |

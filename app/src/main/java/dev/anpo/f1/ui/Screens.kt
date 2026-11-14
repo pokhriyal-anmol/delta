@@ -190,6 +190,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
             Text("Showing cached data · $err", style = F1Type.meta.copy(color = p.sec),
                 modifier = Modifier.padding(F1Dim.screenPad), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
+        item { AppFooter() }
     }
     }
     AnimatedVisibility(note != null, Modifier.align(Alignment.BottomCenter).padding(bottom = 118.dp),

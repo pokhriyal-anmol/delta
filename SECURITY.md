@@ -100,3 +100,11 @@ untrusted.
 5. ~~Someone scanning the internet and finding your app~~ — **not possible.** No listener.
 
 Number 5 is what you asked about. It's the only one on the list that can't happen.
+
+## The support banner
+
+The `direct` flavor can show one sentence and a link at the bottom of Home. The link opens in the
+browser through the same https-only check News uses (`httpsUrl`), so the app makes no request of its
+own and gains no permission. If `supportUrl` is empty or not https, nothing is drawn. The `play`
+flavor has no banner code at all (`app/src/play`), because Google Play has removed apps for donation
+links.

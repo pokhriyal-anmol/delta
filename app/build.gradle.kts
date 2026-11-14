@@ -30,7 +30,7 @@ if (!hasReleaseKeystore) {
         if (wantsRelease) throw GradleException(
             "keystore.properties not found — refusing to sign a release with the public debug key. " +
             "Copy keystore.properties.example to keystore.properties and fill it in " +
-            "(generate your keystore first). assembleDebug still works without it."
+            "(generate your keystore first). assembleDirectDebug still works without it."
         )
     }
 }
@@ -43,9 +43,23 @@ android {
         applicationId = "dev.anpo.f1"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.3.0"
+        versionCode = 7
+        versionName = "1.3.1"
         // No analytics, no crash reporting, no ad SDK. Nothing phones home.
+    }
+
+    // Two builds of one codebase. `direct` is the GitHub APK and may carry the support banner.
+    // `play` is the Play Store build: Google's payments policy has removed apps for donation
+    // links, so the banner code is simply absent from its source set. Both keep one applicationId.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("direct") {
+            dimension = "distribution"
+            // Empty means no banner. Set `supportUrl` in gradle.properties, or pass -PsupportUrl=.
+            val url = providers.gradleProperty("supportUrl").orElse("").get()
+            buildConfigField("String", "SUPPORT_URL", "\"$url\"")
+        }
+        create("play") { dimension = "distribution" }
     }
 
     signingConfigs {
@@ -76,7 +90,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }

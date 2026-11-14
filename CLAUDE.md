@@ -99,8 +99,8 @@ release goes out between slices (News is a placeholder).
 ## Build
 
 ```bash
-./gradlew assembleDebug     # needs JDK 17
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDirectDebug     # needs JDK 17 (the `direct` flavor is the GitHub APK; `play` is the Play build)
+adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 ```
 
 Release: `./release.sh vX.Y.Z` (refuses to run without `keystore.properties`, verifies the signer).
