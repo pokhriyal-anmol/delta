@@ -18,3 +18,9 @@ app/build/
 
 # OS
 .DS_Store
+
+# Local working files
+.scratch/
+.claude/
+CLAUDE.local.md
+floorplan/

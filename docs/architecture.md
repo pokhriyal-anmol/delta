@@ -62,7 +62,7 @@ Checked against the live services. Re-check before quoting any of this.
 | Jolpica-F1 (`api.jolpi.ca/ergast/f1/`) | Free, no auth | 200 requests per hour | All results, 1950 onward. Load-bearing and volunteer-run, so cache as if it could vanish |
 | MultiViewer (`api.multiviewer.app/api/v1/circuits/{key}/{year}`) | Free, no auth | none seen | Real track outlines and corners. 21 of the 23 circuits on the 2026 calendar return one |
 | F1 CDN (`media.formula1.com`) | Free, no auth | none seen | Driver headshots. The path is not derivable from the driver id, so it is a pinned map |
-| RSS feeds | Free | polite use | News, see `.scratch/f1-v2/spec.md` for the source set |
+| RSS feeds | Free | polite use | News, see `docs/v2-spec.md` for the source set |
 | OpenF1 | Free tier | 3 per second | **Locked entirely during live sessions**, past data included. Never put anything a user needs on race day behind it |
 | F1 live timing (SignalR) | Free, no auth | stream | Foreground-only live feature, a later option |
 
@@ -110,7 +110,7 @@ An endless spinner is the worst outcome.
 |---|---|---|
 | 0 | Scaffold, theme, Room, rate limiter | Done |
 | 1 | Home, Standings, Driver, Constructor, Calendar, Weekend for Spa | Done (v1.1.2) |
-| 2 | **V2**: three tabs, circuits for every track, Championship, race result and circuit pages, driver and team depth, News | Planned, see `.scratch/f1-v2/spec.md` |
+| 2 | **V2**: three tabs, circuits for every track, Championship, race result and circuit pages, driver and team depth, News | Planned, see `docs/v2-spec.md` |
 | 3 | Qualifying, sprint, pit stops, lap chart | Later |
 | 4 | OpenF1 enrichment (weather, stints, overtakes), Monday to Thursday only | Later |
 | 5 | Live timing, race start reminders | Later |

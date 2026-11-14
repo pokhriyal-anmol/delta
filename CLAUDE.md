@@ -3,17 +3,17 @@
 Delta, an F1 tracker. Android, Kotlin, Compose. Sideloaded, single user, no Play Store.
 **F1 only.** The Tasks and Valorant tabs are out of scope for good (decided 2026-11-14).
 Three tabs: Home, Championship, News. At v1.1.2 the app has Home only, with the bottom bar's
-other two buttons inert; V2 builds the rest (`.scratch/f1-v2/spec.md`).
+other two buttons inert; V2 builds the rest (`docs/v2-spec.md`).
 
 ## Read first
 
 | File | What it is |
 |---|---|
-| `.scratch/f1-v2/spec.md` | The V2 plan: gaps found, page specs, news design, slices. Draft until the owner approves it |
-| `design-system.md` | Every visual decision and why. Don't re-derive; don't drift |
-| `feature-map.md` | The F1 feature menu with IDs (`F-01`, `C-01`, `N-01`, `W-01`) and status. Use the IDs |
-| `architecture.md` | Data sources, cache policy, build order, risks |
-| `f1-tab-complete.html` | The visual spec. Open in a browser. Screens not yet ported live here |
+| `docs/v2-spec.md` | The V2 plan: gaps found, page specs, news design, slices. Shipped in v1.2.0 and v1.3.0 |
+| `docs/design-system.md` | Every visual decision and why. Don't re-derive; don't drift |
+| `docs/feature-map.md` | The F1 feature menu with IDs (`F-01`, `C-01`, `N-01`, `W-01`) and status. Use the IDs |
+| `docs/architecture.md` | Data sources, cache policy, build order, risks |
+| `docs/f1-tab-complete.html` | The visual spec. Open in a browser. Screens not yet ported live here |
 | `SECURITY.md` | Threat model. Read before touching anything network, and before News |
 | `floorplan/index.html` | Interactive map of the code (gitignored, rebuild by asking to "update the floorplan") |
 
@@ -63,7 +63,7 @@ differences and the chosen source set are in the spec. Feeds are untrusted input
 
 **Live F1 timing** is free via SignalR at `livetiming.formula1.com`. Headers are case-sensitive
 (`User-Agent: BestHTTP`). Foreground-only, so it would not violate the no-background rule. See
-`architecture.md` section 3.
+`docs/architecture.md` section 3.
 
 **Car art exists, and is F1's, not ours.** The team page hero loads each team's transparent 2026 side-on car from `media.formula1.com/image/upload/c_lfill,w_1200/q_auto/v1740000001/common/f1/2026/{folder}/2026{folder}carright.webp` (`Net.car`, folder names pinned in `Repo.carFolder`). Measured 2026-11-14 for all eleven teams. The season is in the path, so each year needs one edit; a 404 just shows no car. An earlier note here said no such art exists. That was wrong. It is copyrighted and carries sponsor logos, so it is hotlinked like the headshots and never stored or bundled.
 

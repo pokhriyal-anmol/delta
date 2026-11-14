@@ -17,7 +17,7 @@ echo "$DN"
 git tag -a "$V" -m "$V" 2>/dev/null || echo "tag $V already exists"
 git push origin "$V"
 
-cp "$APK" "f1t-$V.apk"
-gh release create "$V" "f1t-$V.apk" --title "$V" --generate-notes
-rm -f "f1t-$V.apk"
+cp "$APK" "delta-$V.apk"
+gh release create "$V" "delta-$V.apk" --title "$V" --generate-notes
+rm -f "delta-$V.apk"
 echo "✓ published $V"

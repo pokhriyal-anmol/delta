@@ -3,7 +3,7 @@
 Every feature has an ID so we can refer to it precisely. This replaces the three-tab map
 (Tasks, Valorant, F1). Those tabs are out of scope; the old map is in git at tag `v1.1.2`.
 
-Scope for V2 is in `.scratch/f1-v2/spec.md`. This file is the full menu.
+Scope for V2 is in `docs/v2-spec.md`. This file is the full menu.
 
 **Status**: Built = in the app today. V2 = planned slice S0 to S6. Later = wanted, not scheduled. Cut = decided against.
 
@@ -85,7 +85,7 @@ happened" alerts need polling or a push server, and are banned.
 | F-25 | Speed trap and sector times | Later | Not available during races |
 | F-26 | Live championship swing | Later | Beta endpoint |
 | F-27 | Team radio | Cut | OpenF1 reports almost no radio data in 2026 |
-| F-30 to F-36 | Live timing over SignalR, foreground only | Later | See `architecture.md` section 3 |
+| F-30 to F-36 | Live timing over SignalR, foreground only | Later | See `docs/architecture.md` section 3 |
 | F-40, F-41 | Telemetry traces, track position replay | Later | |
 | F-45 | Race and qualifying start reminders | Built (race only) | One notification an hour before lights out; the bell on Home turns it on or off. Qualifying is not covered |
 

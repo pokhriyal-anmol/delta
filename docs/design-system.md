@@ -7,7 +7,7 @@ were wrong at least once, and the reasons are what stop them regressing.
 rows). Palette from [Nothing OS](https://nothing.tech) (four greys, one red, no gradients).
 Roundness and shadows are ours — neither reference does them.
 
-Live reference: `f1-tab-complete.html`. Code: `app/src/main/java/dev/anpo/f1/ui/Theme.kt`.
+Live reference: `docs/f1-tab-complete.html`. Code: `app/src/main/java/dev/anpo/f1/ui/Theme.kt`.
 
 ---
 

@@ -1,6 +1,6 @@
 # f1-v2: Delta becomes an F1-only app with three tabs
 
-Status: APPROVED 2026-11-14. In progress: S0 to S5 done (S5 uncommitted), S6 left (see Progress). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
+Status: historical planning document. Everything in it shipped in v1.2.0 and v1.3.0 (see CHANGELOG.md). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
 
 ## What changes
 

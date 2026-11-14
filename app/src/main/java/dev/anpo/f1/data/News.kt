@@ -19,7 +19,7 @@ const val MAX_URL = 2048
 
 data class FeedSource(val id: String, val name: String, val url: String, val titleSuffix: String? = null)
 
-/** Eight feeds that returned real items over https on 2026-11-14. Spec: .scratch/f1-v2/spec.md, "News". */
+/** Eight feeds that returned real items over https on 2026-11-14. Spec: docs/v2-spec.md, "News". */
 val FEEDS = listOf(
     FeedSource("bbc", "BBC Sport", "https://feeds.bbci.co.uk/sport/formula1/rss.xml"),
     FeedSource("skysports", "Sky Sports", "https://www.skysports.com/rss/12433"),
