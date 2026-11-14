@@ -104,4 +104,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
 
     testImplementation("junit:junit:4.13.2")
+    // The same pull parser Android ships, so the feed parser can be tested on the JVM.
+    testImplementation("net.sf.kxml:kxml2:2.3.0")
 }

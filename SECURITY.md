@@ -88,6 +88,7 @@ untrusted.
   pixel is the realistic risk; the cost is the publisher seeing your IP on open, which any
   browser visit does too.
 - **Fetch on tab open only.** No background refresh, which is also a security property.
+- **Reddit is the same rules plus two.** Only the three subreddits in `SUBREDDITS` can reach the request URL, so no name is ever typed in. A post link is kept only if its host is reddit.com or redd.it. Reddit's feeds allow roughly one request a minute without an account, so only the selected subreddit is fetched, and a 429 shows a quiet note and keeps the old copy. No Reddit account, token or API key is used or stored.
 
 ## The realistic threat model, ranked
 

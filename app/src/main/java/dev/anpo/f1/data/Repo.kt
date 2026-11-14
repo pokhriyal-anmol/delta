@@ -1,7 +1,11 @@
 package dev.anpo.f1.data
 
 import android.content.Context
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -25,6 +29,7 @@ class Repo(ctx: Context) {
     fun tokensLeft() = limiter.remaining()
 
     private val DAY = 86_400_000L
+    private val NEWS_TTL = 15 * 60_000L
 
     /** Current-season standings change only after a race. Daily TTL is plenty and
      *  keeps us at roughly 20 requests a WEEK against a 200/hour ceiling. */
@@ -207,6 +212,67 @@ class Repo(ctx: Context) {
      * Final standings for a past season, one request per table, kept forever. Both tables are fetched
      * together so the toggle never waits. There is no constructors' table before 1958.
      */
+    private fun NewsEntity.toItem() = NewsItem(source, title, snippet, imageUrl, publishedAt, url, rank)
+
+    /** Press headlines merged across the eight sources, newest first. */
+    fun news(): Flow<List<NewsItem>> = dao.news().map { rows ->
+        mergeNews(rows.filter { !it.source.startsWith(REDDIT_PREFIX) }.map { it.toItem() })
+    }
+
+    /** One subreddit in Reddit's own hot order. */
+    fun reddit(sub: String): Flow<List<NewsItem>> = dao.news().map { rows ->
+        rows.filter { it.source == REDDIT_PREFIX + sub }.map { it.toItem() }.sortedBy { it.rank }
+    }
+
+    private val newsPrefs = ctx.getSharedPreferences("news", Context.MODE_PRIVATE)
+    fun redditChoice(): String = newsPrefs.getString("subreddit", null)?.takeIf { it in SUBREDDITS } ?: SUBREDDITS.first()
+    fun setRedditChoice(sub: String) { if (sub in SUBREDDITS) newsPrefs.edit().putString("subreddit", sub).apply() }
+    /** Set when Reddit refused or failed the last request, so the tab can say so and keep showing the old copy. */
+    val redditProblem = MutableStateFlow<String?>(null)
+
+    /** Reddit allows about one request a minute without an account, so this fetches only the chosen subreddit,
+     *  and not at all while its copy is under 15 minutes old. */
+    suspend fun refreshReddit(sub: String, force: Boolean = false) {
+        if (sub !in SUBREDDITS) return
+        val age = dao.newsFetchedAt(REDDIT_PREFIX + sub)
+        if (!force && age != null && System.currentTimeMillis() - age < NEWS_TTL) return
+        newsLoading.value = true
+        runCatching {
+            val posts = parseReddit(sub, Net.feed(redditUrl(sub)))
+            val now = System.currentTimeMillis()
+            dao.putNews(posts.map { NewsEntity(it.url, it.source, it.title, it.snippet, it.imageUrl, it.publishedAt, it.rank, now) })
+            dao.dropOldNews(REDDIT_PREFIX + sub, now)
+            redditProblem.value = null
+        }.onFailure { redditProblem.value = if (it.message?.contains("429") == true) "Reddit asked for a pause. Try again in a minute." else "Couldn't reach Reddit." }
+        newsLoading.value = false
+    }
+    val newsLoading = MutableStateFlow(false)
+    /** Sources that failed on the last refresh, so the tab can say so quietly and still show the rest. */
+    val newsFailed = MutableStateFlow<List<String>>(emptyList())
+
+    /** Fetched only when the News tab opens (the app does nothing in the background), and a source newer than
+     *  15 minutes is left alone. Each source fails on its own and keeps its old rows. */
+    suspend fun refreshNews(force: Boolean = false) {
+        newsLoading.value = true
+        val failed = mutableListOf<String>()
+        coroutineScope {
+            FEEDS.map { feed ->
+                async {
+                    val age = dao.newsFetchedAt(feed.name)
+                    if (!force && age != null && System.currentTimeMillis() - age < NEWS_TTL) return@async
+                    runCatching {
+                        val items = parseFeed(feed, Net.feed(feed.url))
+                        val now = System.currentTimeMillis()
+                        dao.putNews(items.map { NewsEntity(it.url, it.source, it.title, it.snippet, it.imageUrl, it.publishedAt, it.rank, now) })
+                        dao.dropOldNews(feed.name, now)
+                    }.onFailure { synchronized(failed) { failed += feed.name } }
+                }
+            }.awaitAll()
+        }
+        newsFailed.value = failed.sorted()
+        newsLoading.value = false
+    }
+
     fun seasonResults(): Flow<List<RaceResultEntity>> = dao.seasonResults()
     fun career(kind: Int, id: String): Flow<CareerEntity?> = dao.career(careerKey(kind, id))
     fun history(kind: Int, id: String): Flow<List<ArchiveStandingEntity>> = dao.history(kind, id)

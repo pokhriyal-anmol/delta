@@ -26,7 +26,7 @@ happened" alerts need polling or a push server, and are banned.
 | Championship | World Championship (Drivers and Constructors toggle, season selector) | Built |
 | Championship | Driver | Built, with career, history and teammate |
 | Championship | Team | Built, with points by round, career and history |
-| News | News list | V2 S5, a placeholder screen until then |
+| News | News: Press and Reddit | Built |
 
 ## 2. Core results (Jolpica only)
 
@@ -59,9 +59,10 @@ happened" alerts need polling or a push server, and are banned.
 |---|---|---|---|
 | C-01 | Championship page, Drivers and Constructors toggle | Built | Rows open driver and team pages; past drivers open only if they race in the current season |
 | C-02 | "World Champion" marker on the leader row | Built | From the final standings, never computed. Shown for every past season and for the current one once the last round is in |
-| N-01 | News list from free RSS feeds, one normalised look | V2 S5 | Fetch on tab open, 15 minute cache |
+| N-01 | News list from free RSS feeds, one normalised look | Built | Eight sources, lead and wire layout, fetch on tab open, 15 minute cache |
 | N-02 | Source filter chips | Later | |
-| N-03 | Duplicate story collapsing | V2 S5 | Title similarity, keep the one with an image |
+| N-03 | Duplicate story collapsing | Built | Title similarity, keep the one with an image |
+| N-04 | Reddit tab: r/formula1, r/formuladank or r/f1discussion, one followed at a time | Built | Hot order from the Atom feed, no scores or comments (not in the feed). Posts open in Reddit |
 
 ## 5. Race weekend and tracks
 

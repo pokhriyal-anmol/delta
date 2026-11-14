@@ -137,6 +137,13 @@ data class CareerEntity(
     val seasons: String, val fetchedAt: Long,
 )
 
+/** One headline. url is the key, so a story that moves position keeps one row. rank is the feed's own order. */
+@Entity(tableName = "news")
+data class NewsEntity(
+    @PrimaryKey val url: String, val source: String, val title: String, val snippet: String,
+    val imageUrl: String?, val publishedAt: Long?, val rank: Int, val fetchedAt: Long,
+)
+
 /** Who won each past race at a circuit. Kept once fetched, since history does not change. */
 @Entity(tableName = "circuit_winner", primaryKeys = ["circuitId", "season"])
 data class CircuitWinnerEntity(

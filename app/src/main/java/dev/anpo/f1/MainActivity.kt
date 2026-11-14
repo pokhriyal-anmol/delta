@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
                             details("championship", nav, repo)
                         }
                         navigation(startDestination = Tab.News.start, route = Tab.News.graph) {
-                            composable("news") { NewsScreen() }
+                            composable("news") { NewsScreen(repo) }
                         }
                     }
 

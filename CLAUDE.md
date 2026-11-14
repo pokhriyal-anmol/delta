@@ -79,7 +79,7 @@ differences and the chosen source set are in the spec. Feeds are untrusted input
 
 ## Current state (V2 in progress, 2026-11-14)
 
-S0 to S4 of the V2 spec and the race reminder are committed and released as v1.2.0 (2026-11-14). S0: three tabs (Home, Championship, News) each with its
+S0 to S4 of the V2 spec and the race reminder are committed and released as v1.2.0 (2026-11-14). S5 (News with a Reddit tab) is built and uncommitted. S0: three tabs (Home, Championship, News) each with its
 own back stack, season read from Jolpica's `current` alias, a season-complete Home. News is a
 placeholder until S5. S2: the Championship tab is the real page, with a Drivers and Constructors
 toggle, a season selector back to 1950 (past seasons fetched once, kept forever) and a champion

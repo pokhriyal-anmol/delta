@@ -1,7 +1,7 @@
 # App screenshots
 
 Captured on a Pixel 6 emulator (Android 14, API 34), live Jolpica data. All files
-were re-shot on 2026-11-14 after V2 slices S0 to S4 (three-tab bar, Round 21 Las Vegas is next, Weekend works for any
+were re-shot on 2026-11-14 after V2 slices S0 to S5 (three-tab bar, Round 21 Las Vegas is next, Weekend works for any
 circuit with an outline).
 The app follows the system theme, so there are two full sets:
 
@@ -25,6 +25,7 @@ Same filenames in each:
 | `11-championship-1988.png` | Championship — a past season (1988) with the champion marker |
 | `12-race-result.png` | Race result: Belgian GP classification |
 | `13-circuit.png` | Circuit page: Spa with Eau Rouge, facts and past winners |
+| `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |
 | `15-team-depth.png` | Team page, lower half: points by round, career, seasons |
 

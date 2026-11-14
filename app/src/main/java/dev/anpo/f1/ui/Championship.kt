@@ -155,12 +155,16 @@ private fun SeasonMenu(open: Boolean, newest: Int?, selected: String?, onClose: 
     }
 }
 
-/** Two equal segments in a pill. The selected one is the darker inset, as the bottom bar is. */
 @Composable
-private fun Toggle(selected: Int, onSelect: (Int) -> Unit) {
+private fun Toggle(selected: Int, onSelect: (Int) -> Unit) =
+    Segments(listOf("Drivers", "Constructors"), selected, onSelect)
+
+/** Equal segments in a pill. The selected one is the darker inset, as the bottom bar is. */
+@Composable
+internal fun Segments(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val p = LocalPalette.current
     Row(Modifier.fillMaxWidth().clip(CircleShape).background(p.chip).padding(4.dp)) {
-        listOf(KIND_DRIVER to "Drivers", KIND_TEAM to "Constructors").forEach { (kind, label) ->
+        options.forEachIndexed { kind, label ->
             val on = kind == selected
             val bg by animateColorAsState(if (on) p.nav else p.chip, tween(160), label = "seg-bg")
             val fg by animateColorAsState(if (on) p.txt else p.sec, tween(160), label = "seg-fg")

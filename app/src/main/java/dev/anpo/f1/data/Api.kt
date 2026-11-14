@@ -2,7 +2,10 @@ package dev.anpo.f1.data
 
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -63,6 +66,18 @@ object Net {
         .readTimeout(20, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .build()
+
+    /** One feed as text, refusing anything larger than MAX_FEED_BYTES. Cleartext is blocked app-wide, so a redirect to http fails. */
+    suspend fun feed(url: String): String = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(url).header("User-Agent", "Delta/1.2 (F1 reader)").build()
+        client.newCall(request).execute().use { r ->
+            check(r.isSuccessful) { "HTTP ${r.code}" }
+            val source = r.body!!.source()
+            source.request(MAX_FEED_BYTES + 1L)
+            check(source.buffer.size <= MAX_FEED_BYTES) { "feed larger than $MAX_FEED_BYTES bytes" }
+            source.readUtf8()
+        }
+    }
 
     val jolpica: JolpicaApi = Retrofit.Builder()
         .baseUrl("https://api.jolpi.ca/")

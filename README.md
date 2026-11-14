@@ -27,6 +27,7 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 - Circuit: the 3D track, derived length, laps, turns and the winner of every race held there
 - Race weekend: track, derived length, laps, turns and local-time sessions for any circuit that has an outline
 - Three tabs, each with its own back stack: Home, Championship, News (a placeholder)
+- News: eight press feeds in a lead-and-wire layout, and a Reddit tab for r/formula1, r/formuladank or r/f1discussion. Stories open in the browser or the Reddit app
 - Race reminder: one notification an hour before lights out. The line under the countdown on Home says "reminder on" or "reminder off" and a tap toggles it
 - After the final race Home shows "Season complete" instead of a countdown
 - Light and dark follow the phone
@@ -36,7 +37,7 @@ published with `./release.sh vX.Y.Z`. A release build refuses to run without the
 All of this is in the V2 spec with the evidence behind it.
 
 - Race results exist for the current season only, and a retired driver in an old table does not open
-- News is a placeholder until the feed list lands
+- Reddit shows no scores or comment counts (its feed has none) and allows about one request a minute
 
 ## Using the emulator from the Claude desktop app
 

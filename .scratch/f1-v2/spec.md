@@ -1,6 +1,6 @@
 # f1-v2: Delta becomes an F1-only app with three tabs
 
-Status: APPROVED 2026-11-14. In progress: S0 to S4 done, S5 next (see Progress). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
+Status: APPROVED 2026-11-14. In progress: S0 to S5 done (S5 uncommitted), S6 left (see Progress). Written 2026-11-14. Every number below was measured on that date unless marked "unverified".
 
 ## What changes
 
@@ -251,7 +251,8 @@ Closed after the variants and the contrast finding:
 | S2 | Done 2026-11-14, uncommitted | Championship page: Drivers and Constructors toggle, season selector back to 1950, archive data layer, champion marker from final standings. Closes gap 8 |
 | S3 | Done 2026-11-14, uncommitted | Race result page, tappable Calendar rows, Circuit page with past winners. Closes gaps 6 and 7 |
 | S4 | Done 2026-11-14, uncommitted | Driver and team depth: team and driver links, career totals, season history, teammate head-to-head, recent results, team points by round. Closes gap 9 |
-| S5 to S6 | Not started | S5 (News) is next |
+| S5 | Done 2026-11-14, uncommitted | News: eight press feeds, Lead and wire, Reddit tab with a subreddit picker |
+| S6 | Mostly done | SECURITY.md News and Reddit notes are written |
 
 S0 verification, on the Pixel 6 emulator, dark and light:
 
@@ -302,6 +303,31 @@ S4 verification and deviations:
 - **Head-to-head uses the starting slot, not qualifying.** It costs no requests, since it reads the race results already saved. Starting slot is after penalties, so the card says it stands in for qualifying. A retirement loses to a classified finish, and two retirements settle nothing.
 - **Still open:** a retired driver in an old Championship table does not open a page, because the page is built from the current season's standings. That needs a separate lighter page and is not in this slice. The "Points by round" chart wraps two-digit round numbers on its x axis ("1 0"); it is shared with the driver page and was already like that.
 - A scroll-restore defect appeared again on these pages (Back from a race reset the driver page to the top). They reserve a tall minimum height for 400 ms while their sections load.
+
+S5 verification and deviations:
+
+- Emulator, dark and light, screenshots 09 (Press) and 16 (Reddit). Live run: all eight feeds loaded, 167 stories, the lead is the freshest story with a picture. 48 unit tests pass (17 new: every saved real feed, Guardian widest picture, RaceFans suffix, BBC repeated snippet, ESPN "EST" date, hostile links, caps, an entity-bomb DOCTYPE, duplicate collapsing, and the Reddit feed). One test caught a real bug: escaped script blocks left their text behind.
+- **Reddit, measured 2026-11-14.** The JSON and OAuth endpoints answer 403 without credentials. The Atom feed works. About nine requests in a minute drew a 429 on every subreddit, and the next response carried `x-ratelimit-remaining: 0, reset 57`. On the emulator, switching between the first two subreddits worked and the third within a minute got a 429, which the tab shows as "Reddit asked for a pause" while keeping the old copy. The feed has no scores, comment counts or reliable image, so rows are title, time and the opening of any text post. Decision: RSS plus link-out, no client, no API key. A real API key would add scores and thumbnails if this ever feels thin.
+- Press rows are dense type with no thumbnails, as in the chosen Lead and wire variant. Only the lead has a picture.
+- Pull to refresh is still deferred; a Refresh text button forces a fetch instead.
+- The one new dependency is `kxml2`, test only: the same pull parser Android ships.
+- Not exercised: a feed that fails with the network off, and scroll position after a tab switch (the same first-frame effect as the Calendar may apply).
+
+## S7: polish (picked by the owner 2026-11-14, from `.scratch/f1-v2/polish-variants.html`)
+
+| Block | Pick |
+|---|---|
+| Bottom bar | Sliding thumb, icons only (Cult UI Halo Segmented) |
+| Toggles (Drivers/Constructors, Press/Reddit) | Spring thumb on a frosted track |
+| Standings and news rows | Lit top edge plus press-in to 97% |
+| Buttons | Solid red pill with arrow for the one primary action per page, secondary links stay text |
+| Stat blocks | Count up once on arrival, 450 ms ease-out |
+| Race reminder | Bell in the top bar beside the season chip, outline off and filled red on, ring wiggle, haptic, toast. The "Lights out" line stays plain text |
+| Season picker | Bottom sheet with a year grid, drag to dismiss |
+| Loading | Skeleton rows, then staggered fade-in on the first six rows |
+| Audit | All included: collapsing headers, 48 dp touch targets, haptics, real pull-to-refresh (needs the Material 3 1.3 BOM bump as its own change first), chart label fix, empty and error states with a Try again pill, image fade-in, predictive back, one motion system, warmer light canvas #F8F8F5 |
+
+Not picked: expandable rows, boxed mono-caps, label-expanding nav, direction-aware tabs, blur-in, texture and neutral pill buttons, the switch row and lead-time picker.
 
 ## Not doing
 
