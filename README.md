@@ -110,6 +110,6 @@ adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 
 ## Project
 
-Delta is actively maintained by one person in their spare time, and the latest release is v1.3.1. Bug reports and focused fixes are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are in [CHANGELOG.md](CHANGELOG.md). If Delta earned a place on your phone, you can [buy me a coffee](https://buymeacoffee.com/anmolpokhriyal). A star helps too.
+Delta is actively maintained by one person in their spare time, and the latest release is v1.3.2. Bug reports and focused fixes are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are in [CHANGELOG.md](CHANGELOG.md). If Delta earned a place on your phone, you can [buy me a coffee](https://buymeacoffee.com/anmolpokhriyal). A star helps too.
 
 The code is [AGPL-3.0](LICENSE). The name, the icon and everything that belongs to Formula 1 are not covered, see [NOTICE](NOTICE). Thanks to Jolpica for the data, MultiViewer for the circuit geometry and [Inter](https://rsms.me/inter/) for the type.

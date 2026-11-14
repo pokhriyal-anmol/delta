@@ -4,7 +4,7 @@ All notable changes to Delta are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.3.2] - 2026-11-15
 
 ### Fixed
 - Opening the News tab froze the app for several seconds, long enough on a slower phone for Android to show "isn't responding". The story merge ran on the main thread and re-split every headline for every comparison. It now splits each headline once and runs off the main thread.
@@ -69,6 +69,7 @@ All notable changes to Delta are listed here. The format follows
 
 First signed release: the F1 tab.
 
+[1.3.2]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.1.2...v1.2.0
