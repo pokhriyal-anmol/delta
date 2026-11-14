@@ -4,7 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -225,12 +227,12 @@ class Repo(ctx: Context) {
     /** Press headlines merged across the eight sources, newest first. */
     fun news(): Flow<List<NewsItem>> = dao.news().map { rows ->
         mergeNews(rows.filter { !it.source.startsWith(REDDIT_PREFIX) }.map { it.toItem() })
-    }
+    }.flowOn(Dispatchers.Default)
 
     /** One subreddit in Reddit's own hot order. */
     fun reddit(sub: String): Flow<List<NewsItem>> = dao.news().map { rows ->
         rows.filter { it.source == REDDIT_PREFIX + sub }.map { it.toItem() }.sortedBy { it.rank }
-    }
+    }.flowOn(Dispatchers.Default)
 
     private val newsPrefs = ctx.getSharedPreferences("news", Context.MODE_PRIVATE)
     fun redditChoice(): String = newsPrefs.getString("subreddit", null)?.takeIf { it in SUBREDDITS } ?: SUBREDDITS.first()

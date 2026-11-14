@@ -165,10 +165,13 @@ private fun tokens(title: String): Set<String> =
     title.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length > 2 }.toSet()
 
 /** Near-identical headlines from different sources are the same story. Same story worded differently is not caught. */
-fun sameStory(a: String, b: String): Boolean {
-    val x = tokens(a); val y = tokens(b)
+fun sameStory(a: String, b: String): Boolean = sameStory(a, tokens(a), b, tokens(b))
+
+/** The comparison on tokens that were already split, so a merge splits each title once and not once per pair. */
+private fun sameStory(a: String, x: Set<String>, b: String, y: Set<String>): Boolean {
     if (x.size < 4 || y.size < 4) return a.equals(b, ignoreCase = true)
-    return x.intersect(y).size.toDouble() / x.union(y).size >= 0.8
+    val shared = x.count { it in y }
+    return shared.toDouble() / (x.size + y.size - shared) >= 0.8
 }
 
 /** Newest first, undated stories last in feed order, and a repeated story kept once (the one with a picture). */
@@ -176,9 +179,12 @@ fun mergeNews(items: List<NewsItem>): List<NewsItem> {
     val sorted = items.sortedWith(compareByDescending<NewsItem> { it.publishedAt != null }
         .thenByDescending { it.publishedAt ?: 0L }.thenBy { it.rank })
     val kept = mutableListOf<NewsItem>()
+    val keptTokens = mutableListOf<Set<String>>()
     for (it in sorted) {
-        val i = kept.indexOfFirst { k -> sameStory(k.title, it.title) }
-        if (i < 0) kept += it else if (kept[i].imageUrl == null && it.imageUrl != null) kept[i] = it.copy(publishedAt = kept[i].publishedAt ?: it.publishedAt)
+        val t = tokens(it.title)
+        val i = kept.indices.firstOrNull { k -> sameStory(kept[k].title, keptTokens[k], it.title, t) } ?: -1
+        if (i < 0) { kept += it; keptTokens += t }
+        else if (kept[i].imageUrl == null && it.imageUrl != null) { kept[i] = it.copy(publishedAt = kept[i].publishedAt ?: it.publishedAt); keptTokens[i] = t }
     }
     return kept
 }

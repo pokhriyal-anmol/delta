@@ -114,4 +114,29 @@ class NewsTest {
         assertNotNull(merged.first { it.source == "B" }.imageUrl)
         assertFalse(merged.any { it.source == "A" })
     }
+
+    /** The merge used to re-split every title for every pair and ran on the main thread (seconds of freeze). It now splits once,
+     *  and this pins that the result is the same one the old pairwise version gave on every real feed. */
+    @Test fun mergeGivesTheSameStoriesAsThePairwiseVersionOnAllRealFeeds() {
+        fun oldTokens(t: String) = t.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length > 2 }.toSet()
+        fun oldSame(a: String, b: String): Boolean {
+            val x = oldTokens(a); val y = oldTokens(b)
+            if (x.size < 4 || y.size < 4) return a.equals(b, ignoreCase = true)
+            return x.intersect(y).size.toDouble() / x.union(y).size >= 0.8
+        }
+        fun oldMerge(items: List<NewsItem>): List<NewsItem> {
+            val sorted = items.sortedWith(compareByDescending<NewsItem> { it.publishedAt != null }
+                .thenByDescending { it.publishedAt ?: 0L }.thenBy { it.rank })
+            val kept = mutableListOf<NewsItem>()
+            for (it in sorted) {
+                val i = kept.indexOfFirst { k -> oldSame(k.title, it.title) }
+                if (i < 0) kept += it else if (kept[i].imageUrl == null && it.imageUrl != null) kept[i] = it.copy(publishedAt = kept[i].publishedAt ?: it.publishedAt)
+            }
+            return kept
+        }
+        val all = FEEDS.flatMap { feed(it.id) }
+        assertTrue("need a realistic number of stories", all.size > 100)
+        assertEquals(oldMerge(all), mergeNews(all))
+        assertEquals(oldMerge(all.shuffled(java.util.Random(7))), mergeNews(all.shuffled(java.util.Random(7))))
+    }
 }
