@@ -8,6 +8,14 @@ Unofficial fan app. Not affiliated with Formula 1, Formula One Group or any team
 Latest release: v1.3.1 (v1.3.0 plus the AGPL licence, the two build flavors and the support note at the bottom of Home). V2 is
 planned in `.scratch/f1-v2/spec.md`.
 
+## Install
+
+1. Open the [latest release](https://github.com/pokhriyal-anmol/f1t/releases/latest) on your phone and download the `.apk` file.
+2. Open it. Android will ask to allow installs from your browser or file manager for this one time. Allow it, then install.
+3. Updates are the same steps with the new release. Your data stays, because the app keeps nothing worth losing.
+
+The app is not on Google Play or any other store. It needs Android 8 or newer.
+
 ## Build it
 
 ```bash

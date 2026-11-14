@@ -1,6 +1,17 @@
 # Launch plan: open source, coffee page, Play Store, Reddit
 
-Status: approved 2026-11-14. L1 and L2 are done and released as v1.3.1 (commit bb3a6b9). `supportUrl` is set to the owner's Buy Me a Coffee page. L0 items still with the owner: trademark search, email decision, keystore backup. Written after v1.3.0.
+Status: approved 2026-11-14, reordered the same day (see Pivot). L1 and L2 are done and released as v1.3.1 (commit bb3a6b9). `supportUrl` is set to the owner's Buy Me a Coffee page. L0 items still with the owner: trademark search, email decision, keystore backup. Written after v1.3.0.
+
+## Pivot, 2026-11-14 (later)
+
+The owner will not pay Google's one-time developer fee now. So Play (L5) is deferred, and the order changes: **test demand on Reddit first, then decide about any store.** The post says plainly that the app is not on a store because of the fee. The draft and the way to measure interest are in `.scratch/launch/reddit-post.md`.
+
+What this changes:
+- Distribution is the GitHub APK only. The repo and releases must be public before anyone can download, which needs the owner's yes.
+- The `play` flavor stays in the code but unused. Nothing needs it until a store is chosen.
+- A Play listing is no longer the main risk to the name. The name is still public the moment the post goes up.
+- Google's developer verification for apps outside Play applies from 30 September 2026 in Brazil, Indonesia, Singapore and Thailand and globally in 2027 (Google's own page, India not listed in the first wave). A $25 Android Developer Console account covers apps outside Play, and a free limited account allows up to 20 devices. Revisit if the app spreads in 2027.
+- A free store route exists: IzzyOnDroid. Its submission rules were not checked.
 
 ## Decisions already made
 
