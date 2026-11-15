@@ -4,6 +4,13 @@ All notable changes to Delta are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - Unreleased
+
+### Added
+- Learn F1, opened from a row on Home: 14 short lessons for someone new to the sport, from a race weekend to flags, tyres, points, penalties and Super Licence bans. The main lessons have a diagram you can touch (a 22-car grid, a waving flag, a tyre axis, a racing line of penalties) and a few fun facts, and the index shows a fact of the day.
+- Schumacher re-scored: his 19 seasons on today's 25-18-15 table, 3,890 points against the 1,566 he was credited with. A thought experiment on finishing positions only.
+- The lessons are bundled text, so they work offline and add no network request. Lessons that change each season say which rules year they describe, and figures that come from secondary sources name them.
+
 ## [1.4.0] - 2026-11-15
 
 ### Added
@@ -81,6 +88,7 @@ All notable changes to Delta are listed here. The format follows
 
 First signed release: the F1 tab.
 
+[1.5.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.0...v1.3.1

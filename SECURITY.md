@@ -64,6 +64,12 @@ is treated as untrusted.
   reach the request URL. A post link is kept only if its host is `reddit.com` or `redd.it`. No
   Reddit account, token or API key is used or stored.
 
+## Learn F1 adds no input
+
+The Learn section is text and drawings compiled into the app. It makes no request, parses nothing
+from outside, opens no link and stores nothing. Its one date-dependent piece, the fact of the day,
+is chosen from the phone's clock. Nothing in it changes the threat model below.
+
 ## Threat model, ranked
 
 1. Installing a malicious APK. This is by far the likeliest way a phone is compromised, and
