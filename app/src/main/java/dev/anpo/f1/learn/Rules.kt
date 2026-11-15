@@ -22,3 +22,7 @@ fun racePoints(position: Int, distanceShare: Double): Int {
 // A sprint scores only once half the distance is done (FIA-A A2.2.2).
 fun sprintPoints(position: Int, distanceShare: Double): Int =
     if (distanceShare < 0.5) 0 else SPRINT.getOrElse(position - 1) { 0 }
+
+/** Points on today's 25-18-15-12-10-8-6-4-2-1 table for finishing position texts. R, D, W and anything outside the top ten score zero. */
+fun rescore(positions: List<String>): Int =
+    positions.sumOf { p -> p.toIntOrNull()?.let { RACE_FULL.getOrNull(it - 1) } ?: 0 }
