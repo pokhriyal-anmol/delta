@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import dev.anpo.f1.R
 import dev.anpo.f1.data.*
+import dev.anpo.f1.learn.LearnEntry
 import coil.compose.AsyncImage
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -49,7 +50,7 @@ private fun raceInstant(r: RaceEntity): Instant? = utcMillis(r.date, r.time)?.le
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
-               onWeekend: () -> Unit, onCalendar: () -> Unit, onConstructor: (String) -> Unit) {
+               onWeekend: () -> Unit, onCalendar: () -> Unit, onConstructor: (String) -> Unit, onLearn: () -> Unit) {
     val p = LocalPalette.current
     val drivers by repo.drivers().collectAsState(emptyList())
     val teams by repo.teams().collectAsState(emptyList())
@@ -186,6 +187,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                 }
             }
         }
+        item { LearnEntry(onLearn) }
         if (err != null) item {
             // Never a spinner that never resolves. Say what's stale and move on.
             Text("Showing cached data · $err", style = F1Type.meta.copy(color = p.sec),

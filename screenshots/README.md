@@ -26,6 +26,8 @@ Same filenames in each:
 | `12-race-result.png` | Race result: Belgian GP classification |
 | `13-circuit.png` | Circuit page: Spa with Eau Rouge, facts and past winners |
 | `18-home-footer.png` | Home scrolled to the bottom: the support note (direct build only) and the unofficial line |
+| `19-learn-index.png` | Learn F1: the lessons as a staggered starting grid, with a fun fact of the day |
+| `20-learn-points.png` | Learn F1 lesson page template (Points): season stamp, text and tables on hairlines |
 | `17-season-sheet.png` | Championship: the season picker as a bottom sheet |
 | `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |

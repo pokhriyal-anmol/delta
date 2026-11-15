@@ -37,6 +37,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.*
 import dev.anpo.f1.data.Repo
+import dev.anpo.f1.learn.LearnScreen
+import dev.anpo.f1.learn.LessonScreen
 import dev.anpo.f1.ui.*
 
 /** The three bottom-bar destinations. Each owns a nested graph, so each keeps its own back stack. */
@@ -92,8 +94,11 @@ class MainActivity : ComponentActivity() {
                                     onStandings = { nav.openTab(Tab.Championship, selected = false) },
                                     onWeekend = { nav.navigate("home/weekend") },
                                     onCalendar = { nav.navigate("home/calendar") },
-                                    onConstructor = { nav.navigate("home/constructor/$it") })
+                                    onConstructor = { nav.navigate("home/constructor/$it") },
+                                    onLearn = { nav.navigate("home/learn") })
                             }
+                            composable("home/learn") { LearnScreen(onLesson = { nav.navigate("home/learn/$it") }) }
+                            composable("home/learn/{id}") { e -> LessonScreen(e.arguments?.getString("id").orEmpty()) }
                             composable("home/weekend") { WeekendScreen(repo, onCircuit = { nav.navigate("home/circuit/$it") }) }
                             composable("home/calendar") {
                                 CalendarScreen(repo,
