@@ -59,6 +59,10 @@ Delta follows the phone's theme. All 36 screenshots are in [`screenshots/`](scre
 2. Open it and allow installs from your browser or file manager when Android asks.
 3. To update, repeat with the newer release. Updates install over the old version.
 
+Prefer automatic updates? Add Delta to [Obtainium](https://github.com/ImranR98/Obtainium), which watches this repository's releases and installs new versions for you:
+
+[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="48">](https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/pokhriyal-anmol/delta)
+
 Needs Android 8.0 or newer. Delta is not on Google Play or any other store, only because of the developer fee.
 
 ## What it does
