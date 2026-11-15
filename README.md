@@ -41,7 +41,7 @@ No ads, no account, no server.
   <img src="screenshots/light/13-circuit.png" width="32%" alt="Circuit page in the light theme">
 </p>
 
-Delta follows the phone's theme. All 36 screenshots are in [`screenshots/`](screenshots/README.md).
+Delta follows the phone's theme. All 52 screenshots are in [`screenshots/`](screenshots/README.md).
 
 </details>
 
@@ -50,6 +50,7 @@ Delta follows the phone's theme. All 36 screenshots are in [`screenshots/`](scre
 - Nothing to sign in to, no ads and no tracking SDKs. Delta has no server of its own.
 - It does nothing when it is closed: no polling, no background jobs, no foreground service.
 - History goes back to 1950, and every past season shows its champion.
+- A Learn F1 section explains the rules to a new fan in 14 short lessons, offline, with diagrams you can touch.
 - It keeps working from a local cache when the network drops, and says so.
 - The code is open under AGPL-3.0.
 

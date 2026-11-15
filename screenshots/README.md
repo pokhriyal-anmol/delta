@@ -27,7 +27,13 @@ Same filenames in each:
 | `13-circuit.png` | Circuit page: Spa with Eau Rouge, facts and past winners |
 | `18-home-footer.png` | Home scrolled to the bottom: the support note (direct build only) and the unofficial line |
 | `19-learn-index.png` | Learn F1: the lessons as a staggered starting grid, with a fun fact of the day |
-| `20-learn-points.png` | Learn F1 lesson page template (Points): season stamp, text and tables on hairlines |
+| `20-learn-points.png` | Learn F1, Points: podium, cut-short bars and Schumacher re-scored on today's table |
+| `21-learn-qualifying.png` | Learn F1, Qualifying: the 22-car grid with Q1, Q2, Q3 and the 107 percent rule |
+| `22-learn-flags.png` | Learn F1, Flags: one waving flag you swipe through, with the full rack below |
+| `23-learn-tyres.png` | Learn F1, Tyres: the compounds on a speed against life axis |
+| `24-learn-penalties.png` | Learn F1, Penalties: six moments along a racing line, tap a corner to read it |
+| `25-learn-licence.png` | Learn F1, Race bans and your licence: the 12-point Super Licence and three bans |
+| `26-learn-hall-of-shame.png` | Learn F1, Hall of shame: the 80-place record and the grid it produced |
 | `17-season-sheet.png` | Championship: the season picker as a bottom sheet |
 | `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |
