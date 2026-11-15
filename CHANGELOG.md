@@ -4,7 +4,7 @@ All notable changes to Delta are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [1.5.0] - Unreleased
+## [1.5.0] - 2026-11-15
 
 ### Added
 - Learn F1, opened from a row on Home: 14 short lessons for someone new to the sport, from a race weekend to flags, tyres, points, penalties and Super Licence bans. The main lessons have a diagram you can touch (a 22-car grid, a waving flag, a tyre axis, a racing line of penalties) and a few fun facts, and the index shows a fact of the day.
