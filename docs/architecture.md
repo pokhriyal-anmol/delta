@@ -91,14 +91,15 @@ FastF1 and undercut-f1.
 |---|---|
 | Current season standings | Daily |
 | Current season calendar | Weekly |
-| Season results | Daily |
+| Season results | Daily, and only the rounds that finished since the last fetch (a full re-page only on a first run or after four or more missing rounds) |
 | Past seasons (standings, results) | Never, they are immutable |
 | Track outlines | Never |
 | Career totals | Weekly for active drivers, never for retired |
 | News | 15 minutes, only when the tab opens |
+| Update check (`direct` only) | Daily, GitHub releases feed |
 
 **Rate limiting.** A token bucket (`RateLimiter.kt`) persists across process death, so a restart
-cannot overspend Jolpica's 200 per hour. Normal use is a few dozen requests a week.
+cannot overspend Jolpica's 200 per hour. Measured on 2026-11-15: a cold tour costs 20 Jolpica requests and a repeat day about 2 (standings only). A 429 with `Retry-After` is waited out once.
 
 **Offline.** The target is that every screen renders from the cache with an "as of" time, and a
 failed refresh keeps the old data and shows the reason. Today this is partial (feature X-04).

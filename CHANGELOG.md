@@ -4,6 +4,18 @@ All notable changes to Delta are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-15
+
+### Added
+- A quiet "Update available" line on Home when a newer release exists (`direct` build only). It reads the GitHub releases feed at most once a day while the app is open and opens the release page in the browser.
+- "Copy diagnostics" in the footer: app version, Android version, device and the last few reasons the app was closed, copied to the clipboard. Nothing is sent anywhere.
+- "Data and licences" link and a credit for Jolpica-F1 (CC BY-NC-SA 4.0) and MultiViewer.
+
+### Changed
+- Season results are fetched by round. After the first load Delta asks only for rounds that have finished and are not stored, so a repeat day costs about 2 Jolpica requests instead of 7.
+- Every request now carries a `Delta/<version>` User-Agent, which Jolpica's terms ask for.
+- A "too many requests" reply is waited out once, and if it persists the app says the data service is busy and shows saved data.
+
 ## [1.3.2] - 2026-11-15
 
 ### Fixed
@@ -69,6 +81,7 @@ All notable changes to Delta are listed here. The format follows
 
 First signed release: the F1 tab.
 
+[1.4.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/pokhriyal-anmol/delta/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/pokhriyal-anmol/delta/compare/v1.2.0...v1.3.0

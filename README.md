@@ -61,7 +61,7 @@ Delta follows the phone's theme. All 36 screenshots are in [`screenshots/`](scre
 
 Prefer automatic updates? Add Delta to [Obtainium](https://github.com/ImranR98/Obtainium), which watches this repository's releases and installs new versions for you:
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="48">](https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/pokhriyal-anmol/delta)
+[<img src="docs/media/badge_obtainium.png" alt="Get it on Obtainium" height="48">](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fadd%2Fhttps%3A%2F%2Fgithub.com%2Fpokhriyal-anmol%2Fdelta)
 
 Needs Android 8.0 or newer. Delta is not on Google Play or any other store, only because of the developer fee.
 
@@ -114,6 +114,6 @@ adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 
 ## Project
 
-Delta is actively maintained by one person in their spare time, and the latest release is v1.3.2. Bug reports and focused fixes are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are in [CHANGELOG.md](CHANGELOG.md). If Delta earned a place on your phone, you can [buy me a coffee](https://buymeacoffee.com/anmolpokhriyal). A star helps too.
+Delta is actively maintained by one person in their spare time, and the latest release is v1.4.0. Bug reports and focused fixes are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are in [CHANGELOG.md](CHANGELOG.md). If Delta earned a place on your phone, you can [buy me a coffee](https://buymeacoffee.com/anmolpokhriyal). A star helps too.
 
 The code is [AGPL-3.0](LICENSE). The name, the icon and everything that belongs to Formula 1 are not covered, see [NOTICE](NOTICE). Thanks to Jolpica for the data, MultiViewer for the circuit geometry and [Inter](https://rsms.me/inter/) for the type.

@@ -15,8 +15,11 @@ Only the latest release is supported.
 Scanning tools such as Shodan and mass port scans find things that listen. Delta never listens.
 It has no server, no open port and no bound socket. It makes outbound HTTPS requests to
 `api.jolpi.ca` (results), `api.multiviewer.app` (circuit outlines), `media.formula1.com` (driver
-photos and car images) and the hosts of the news feeds listed in
-[docs/v2-spec.md](docs/v2-spec.md), and reads the replies. That is the whole network surface.
+photos and car images), the hosts of the news feeds listed in
+[docs/v2-spec.md](docs/v2-spec.md) and, in the `direct` build only, `github.com` (the releases
+feed, at most once a day, to show an update note), and reads the replies. That is the whole network
+surface. Every request carries a `Delta/<version>` User-Agent and no other identifier. The update
+note only opens an `https` release page in the browser. The app never downloads or installs an APK.
 
 An outbound-only client cannot be addressed from the internet. This is a property of the design
 and cannot be misconfigured away.
