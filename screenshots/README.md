@@ -34,6 +34,7 @@ Same filenames in each:
 | `24-learn-penalties.png` | Learn F1, Penalties: six moments along a racing line, tap a corner to read it |
 | `25-learn-licence.png` | Learn F1, Race bans and your licence: the 12-point Super Licence and three bans |
 | `26-learn-hall-of-shame.png` | Learn F1, Hall of shame: the 80-place record and the grid it produced |
+| `27-learn-lesson.png` | Learn F1, a lesson without a diagram (The race): text, hairline rows, a fun fact and its source |
 | `17-season-sheet.png` | Championship: the season picker as a bottom sheet |
 | `16-news-reddit.png` | News: the Reddit tab with the subreddit picker |
 | `14-driver-depth.png` | Driver page, lower half: career, teammate head-to-head, recent results, seasons |

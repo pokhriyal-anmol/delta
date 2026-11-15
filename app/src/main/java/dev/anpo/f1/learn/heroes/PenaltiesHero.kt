@@ -96,7 +96,7 @@ private fun Line(sel: Int, onPick: (Int) -> Unit) {
         EVENTS.forEachIndexed { i, e ->
             val onLeft = i % 2 == 0
             val x = if (onLeft) left else right
-            Corner(e, i == sel, Modifier.offset(x = x - 24.dp, y = cornerY(i, step) - 24.dp)) { onPick(i) }
+            Box(Modifier.offset(x = x - 24.dp, y = cornerY(i, step) - 24.dp)) { Corner(e, i == sel) { onPick(i) } }
             val w = if (onLeft) maxWidth - x - 34.dp else x - 34.dp
             Column(Modifier.offset(x = if (onLeft) x + 30.dp else 0.dp, y = cornerY(i, step) - 20.dp).width(w)) {
                 Text(e.year, style = F1Type.stat.copy(color = if (e.ban) p.accent else p.txt, textAlign = if (onLeft) TextAlign.Start else TextAlign.End), modifier = Modifier.fillMaxWidth())
@@ -107,9 +107,9 @@ private fun Line(sel: Int, onPick: (Int) -> Unit) {
 }
 
 @Composable
-private fun Corner(e: Event, on: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun Corner(e: Event, on: Boolean, onClick: () -> Unit) {
     val p = LocalPalette.current
-    Box(modifier.size(48.dp).pressable(role = Role.Button, onClickLabel = "Show ${e.year}", onClick = onClick)
+    Box(Modifier.size(48.dp).pressable(role = Role.Button, onClickLabel = "Show ${e.year}", onClick = onClick)
         .semantics { contentDescription = "${e.year}, ${e.title}"; selected = on }, contentAlignment = androidx.compose.ui.Alignment.Center) {
         Canvas(Modifier.size(28.dp)) {
             val c = if (e.ban) p.accent else p.txt

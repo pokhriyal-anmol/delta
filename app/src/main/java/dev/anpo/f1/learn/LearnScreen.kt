@@ -35,7 +35,7 @@ fun LearnScreen(onLesson: (String) -> Unit) {
     val fact = remember { factOfTheDay(LocalDate.now().dayOfYear) }
     LazyColumn(Modifier.fillMaxSize().background(p.canvas).ambient(p.isDark), contentPadding = PaddingValues(bottom = 140.dp)) {
         item { LearnHeader() }
-        item { FactStrip(fact) }
+        item { FactView(fact) }
         item { StartingGrid(onLesson) }
     }
 }
@@ -50,18 +50,6 @@ private fun LearnHeader() {
         Spacer(Modifier.height(8.dp))
         Text("Pole position is lesson one. ${lessons.size} short lessons, every number sourced.",
             style = F1Type.meta.copy(color = p.sec))
-    }
-}
-
-@Composable
-private fun FactStrip(fact: String) {
-    val p = LocalPalette.current
-    Column(Modifier.padding(horizontal = F1Dim.screenPad).padding(top = 22.dp)) {
-        Spacer(Modifier.fillMaxWidth().height(1.dp).background(p.divider))
-        Spacer(Modifier.height(14.dp))
-        Text("DID YOU KNOW", style = F1Type.label.copy(color = p.accent, fontSize = 11.sp))
-        Spacer(Modifier.height(6.dp))
-        Text(fact, style = F1Type.stat.copy(color = p.txt), lineHeight = 25.sp)
     }
 }
 

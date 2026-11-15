@@ -112,7 +112,7 @@ private fun Rescore() {
         Text("2002: ${s.first { it.year == 2002 }.official} becomes ${s.first { it.year == 2002 }.today}", style = F1Type.meta.copy(color = p.txt, fontSize = 11.sp, fontWeight = FontWeight.Bold))
         Text("${s.last().year}", style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp))
     }
-    Text("Pale bar: what he scored then. Dark bar: the same finishes today. A thought experiment: finishing positions only, no sprints, and he raced 14 to 19 times a year, not 24.",
+    Text("Pale bar: what he scored then. Dark bar: the same finishes today. A thought experiment: finishing positions only, no sprints, and seasons then were shorter than today's limit of 24 races.",
         style = F1Type.meta.copy(color = p.sec, fontSize = 11.sp), lineHeight = 16.sp, modifier = Modifier.padding(top = 10.dp))
 }
 

@@ -72,11 +72,11 @@ private fun TableView(t: Block.Table) {
 private fun ColumnTable(t: Block.Table, wide: Boolean) {
     val p = LocalPalette.current
     Row(Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-        t.header.forEachIndexed { c, h -> Cell(h, c, wide, header = true) }
+        t.header.forEachIndexed { c, h -> Cell(h, cellWeight(c, wide), header = true) }
     }
     t.rows.forEach { row ->
         Spacer(Modifier.fillMaxWidth().height(0.5.dp).background(p.divider))
-        Row(Modifier.fillMaxWidth().padding(vertical = 9.dp)) { row.forEachIndexed { c, v -> Cell(v, c, wide, header = false) } }
+        Row(Modifier.fillMaxWidth().padding(vertical = 9.dp)) { row.forEachIndexed { c, v -> Cell(v, cellWeight(c, wide), header = false) } }
     }
 }
 
@@ -97,13 +97,15 @@ private fun StackedTable(t: Block.Table) {
     }
 }
 
+private fun cellWeight(col: Int, wide: Boolean) = if (col == 0) (if (wide) 1.7f else 1.5f) else 1f
+
 /** The first column is wider, so labels wrap less than the numbers beside them. */
 @Composable
-private fun RowScope.Cell(text: String, col: Int, wide: Boolean, header: Boolean) {
+private fun RowScope.Cell(text: String, w: Float, header: Boolean) {
     val p = LocalPalette.current
-    val w = if (col == 0) (if (wide) 1.7f else 1.5f) else 1f
+    val first = w > 1f
     val style = if (header) F1Type.label.copy(color = p.sec, fontSize = 11.sp)
-    else F1Type.body.copy(color = if (col == 0) p.sec else p.txt, fontSize = 13.sp, fontWeight = if (col == 0) FontWeight.Normal else FontWeight.Medium)
+    else F1Type.body.copy(color = if (first) p.sec else p.txt, fontSize = 13.sp, fontWeight = if (first) FontWeight.Normal else FontWeight.Medium)
     Text(text, style = style, modifier = Modifier.weight(w).padding(end = 6.dp))
 }
 

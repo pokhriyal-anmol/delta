@@ -41,7 +41,7 @@ No ads, no account, no server.
   <img src="screenshots/light/13-circuit.png" width="32%" alt="Circuit page in the light theme">
 </p>
 
-Delta follows the phone's theme. All 52 screenshots are in [`screenshots/`](screenshots/README.md).
+Delta follows the phone's theme. All 54 screenshots are in [`screenshots/`](screenshots/README.md).
 
 </details>
 
