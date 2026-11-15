@@ -93,27 +93,15 @@ internal val lessonsRules: List<Lesson> = listOf(
                 "Every driver needs a Super Licence, the FIA's permission to race in F1. It was introduced in 1984 " +
                     "to keep unqualified drivers out, and rebuilt in 2015 after Max Verstappen arrived at 17."
             ),
-            Rows(
-                listOf(
-                    "Points to get in" to "40, from the past three seasons of junior racing",
-                    "Minimum age" to "18",
-                    "Also needed" to "The FIA's medical and safety checks",
-                )
-            ),
-            Para("The same licence carries penalty points, since 2014. The licence is about what you earned, penalty points are about what you did."),
-            Rows(
-                listOf(
-                    "Ban" to "12 penalty points inside any 12 months means a ban from the next race",
-                    "Expiry" to "Each point drops off 12 months after it was given. After a ban, 12 points are removed",
-                    "Only one ban so far" to "Kevin Magnussen hit 12 at Monza 2024 and missed Azerbaijan",
-                )
+            Para(
+                "The same licence carries penalty points, since 2014. The licence is about what you earned, penalty points are about " +
+                    "what you did. Each point drops off 12 months after it was given, and after a ban 12 points are removed."
             ),
             Para(
                 "Other routes: the stewards can suspend a driver from the next event directly. Five reprimands in " +
                     "one season mean a 10 place grid drop. Lose more than 15 places of unserved grid penalties in " +
                     "12 months and you start behind everyone."
             ),
-            Para("Before the points system, Romain Grosjean sat out Italy 2012 after a first lap pile-up at Spa. Schumacher missed Italy and Portugal in 1994."),
         ),
         facts = listOf("Only one driver has ever been banned through penalty points: Kevin Magnussen."),
         source = "$FIA_B, B1.9.5f, B1.9.5j and B2.5.4b.iv. Licence and bans: Wikipedia, Autosport and RacingNews365, secondary sources.",

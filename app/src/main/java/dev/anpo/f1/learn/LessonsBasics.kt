@@ -114,17 +114,8 @@ internal val lessonsBasics: List<Lesson> = listOf(
                     "with most wins, then most second places, then thirds, and so on."
             ),
             Para(
-                "Schumacher, re-scored. Every race finish in his 308 entries was re-scored with today's table, " +
-                    "finishing position only, with disqualifications scoring zero. It is a thought experiment: " +
-                    "fewer races, different cars and no sprints would all change how drivers raced."
-            ),
-            Table(
-                listOf("", "Official", "Today's table"),
-                listOf(
-                    listOf("Career points", "1,566", "3,890"),
-                    listOf("Points per entry", "5.1", "12.6"),
-                    listOf("Best season", "144 (2002)", "380 (2002)"),
-                ),
+                "Schumacher, re-scored: all 308 of his entries scored with today's table, with disqualifications " +
+                    "scoring zero. That is 12.6 points an entry, against 5.1 at the time."
             ),
             Para(
                 "Six of his seven titles survive. 1994 does not: Damon Hill would win it 252 to 236. In 1999, " +
