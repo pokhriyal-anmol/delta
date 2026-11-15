@@ -1,6 +1,8 @@
 package dev.anpo.f1.data
 
 import android.content.Context
+import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -21,6 +23,10 @@ class Repo(ctx: Context) {
     private val current = "current"
 
     val error = MutableStateFlow<String?>(null)
+
+    /** A 429 is Jolpica's per-IP limit, shared with everyone on the same address. Say so instead of showing "HTTP 429". */
+    private fun reason(t: Throwable, fallback: String): String =
+        if (t is retrofit2.HttpException && t.code() == 429) "The data service is busy, showing saved data." else t.message ?: fallback
     val loading = MutableStateFlow(false)
 
     fun drivers(): Flow<List<DriverStandingEntity>> = dao.drivers()
@@ -71,54 +77,44 @@ class Repo(ctx: Context) {
             error.value = null
         }.onFailure {
             // Never crash the tab. Stale cache beats an empty screen.
-            error.value = it.message ?: "Couldn't reach Jolpica"
+            error.value = reason(it, "Couldn't reach Jolpica")
         }
         loading.value = false
     }
 
-    /** Per-driver podiums / poles / DNFs, derived from the whole season's results in
-     *  one request. Standings change only after a race, so a daily TTL is plenty. */
+    /** Per-driver podiums / poles / DNFs / points by round, derived from the stored results. A finished race
+     *  never changes, so only rounds that are finished and not yet stored are requested (a repeat day is
+     *  usually none). On a first run or after a long gap the whole season is paged instead. */
     suspend fun refreshResults(force: Boolean = false) {
         val age = dao.statsFetchedAt()
         if (!force && age != null && System.currentTimeMillis() - age < DAY) return
         runCatching {
-            // Jolpica caps limit at 100, so page through with offset until we have `total`.
-            val races = mutableListOf<JRace>()
-            var offset = 0; var total = Int.MAX_VALUE
-            while (offset < total) {
-                limiter.acquire()
-                val page = Net.jolpica.seasonResults(current, 100, offset)
-                total = page.data.total?.toIntOrNull() ?: 0
-                val pageRaces = page.data.races?.races.orEmpty()
-                if (pageRaces.isEmpty()) break
-                races += pageRaces
-                offset += 100
-            }
-            val now = System.currentTimeMillis()
-            val agg = HashMap<String, IntArray>()            // driverId -> [podiums, poles, dnfs]
-            val perRound = HashMap<String, HashMap<Int, Int>>() // driverId -> round -> points
-            races.forEach { race ->
-                val rnd = race.round.toIntOrNull()
-                race.results.forEach { res ->
-                    val id = res.driver.driverId
-                    val a = agg.getOrPut(id) { IntArray(3) }
-                    val finish = res.positionText.toIntOrNull()   // numeric = classified finish
-                    if (finish != null && finish <= 3) a[0]++      // podium
-                    if (res.grid.toIntOrNull() == 1) a[1]++        // pole (started P1)
-                    if (finish == null) a[2]++                     // DNF (R/D/W/... not a number)
-                    if (rnd != null) perRound.getOrPut(id) { HashMap() }[rnd] = res.points.toIntOrNull() ?: 0
-                }
-            }
+            val calendar = dao.racesNow()
+            val season = calendar.firstOrNull()?.season
+            val missing = season?.let { missingRounds(finishedRounds(calendar, LocalDate.now(ZoneOffset.UTC)), dao.storedRounds(it).toSet()) }
+            val races = if (missing == null || missing.size >= BULK_FROM) pageSeason()
+                else missing.flatMap { round -> limiter.acquire(); Net.jolpica.results(season, round).data.races?.races.orEmpty() }
             dao.putRaceResults(races.flatMap { resultRows(it) })
-            val maxRound = races.mapNotNull { it.round.toIntOrNull() }.maxOrNull() ?: 0
-            if (agg.isNotEmpty()) dao.putStats(agg.map { (id, a) ->
-                val rounds = perRound[id]
-                val csv = (1..maxRound).joinToString(",") { (rounds?.get(it) ?: 0).toString() }
-                DriverSeasonStat(id, races.first().season, podiums = a[0], poles = a[1], dnfs = a[2],
-                    roundPoints = csv, fetchedAt = now)
-            })
+            val stats = (season ?: races.firstOrNull()?.season)?.let { seasonStats(dao.resultsOf(it), System.currentTimeMillis()) }.orEmpty()
+            if (stats.isNotEmpty()) dao.putStats(stats)
             error.value = null
-        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+        }.onFailure { error.value = reason(it, "Couldn't reach Jolpica") }
+    }
+
+    /** Jolpica caps limit at 100, so page through with offset until we have `total`. */
+    private suspend fun pageSeason(): List<JRace> {
+        val races = mutableListOf<JRace>()
+        var offset = 0; var total = Int.MAX_VALUE
+        while (offset < total) {
+            limiter.acquire()
+            val page = Net.jolpica.seasonResults(current, 100, offset)
+            total = page.data.total?.toIntOrNull() ?: 0
+            val pageRaces = page.data.races?.races.orEmpty()
+            if (pageRaces.isEmpty()) break
+            races += pageRaces
+            offset += 100
+        }
+        return races
     }
 
     /** The calendar is fixed at season start - fetch once, keep for a week. */
@@ -140,7 +136,7 @@ class Repo(ctx: Context) {
                     fetchedAt = now,
                 )
             })
-        }.onFailure { error.value = it.message }
+        }.onFailure { error.value = reason(it, "Couldn't load the calendar") }
     }
 
     /** team_colour is not in Jolpica - it's an OpenF1 field. Since OpenF1 is
@@ -213,7 +209,7 @@ class Repo(ctx: Context) {
                 eauStart = if (spa) minOf(a, b) else 0, eauEnd = if (spa) maxOf(a, b) else 0,
                 lengthKm = trackLengthKm(c.x, c.y),
                 fetchedAt = System.currentTimeMillis()))
-        }.onFailure { error.value = it.message ?: "Couldn't reach MultiViewer" }
+        }.onFailure { error.value = reason(it, "Couldn't reach MultiViewer") }
     }
 
     fun archive(season: String, kind: Int): Flow<List<ArchiveStandingEntity>> = dao.archive(season, kind)
@@ -304,7 +300,7 @@ class Repo(ctx: Context) {
             val years = Net.jolpica.careerSeasons(scope, id).data.seasonTable?.seasons.orEmpty().joinToString(",") { it.season }
             dao.putCareer(CareerEntity(key, wins, wins + second + third, poles, years, System.currentTimeMillis()))
             error.value = null
-        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+        }.onFailure { error.value = reason(it, "Couldn't reach Jolpica") }
     }
 
     /** Fetches the final tables this career is missing, one request each, then keeps them for good. */
@@ -316,7 +312,7 @@ class Repo(ctx: Context) {
             // Rows are kept per season, so "have" must mean the season is saved, not that this entity is in it.
             missingSeasons(kind, career, have, currentYear).filter { dao.archiveCount(it.toString(), kind) == 0 }.forEach { fetchTable(it.toString(), kind) }
             error.value = null
-        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+        }.onFailure { error.value = reason(it, "Couldn't reach Jolpica") }
     }
 
     private suspend fun fetchTable(season: String, kind: Int) {
@@ -343,7 +339,7 @@ class Repo(ctx: Context) {
                 if (list != null) dao.putArchive(teamArchive(list, System.currentTimeMillis()))
             }
             error.value = null
-        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+        }.onFailure { error.value = reason(it, "Couldn't reach Jolpica") }
     }
 
     fun raceResult(season: String, round: Int): Flow<List<RaceResultEntity>> = dao.raceResult(season, round)
@@ -359,7 +355,7 @@ class Repo(ctx: Context) {
             val winners = Net.jolpica.circuitWinners(circuitId).data.races?.races.orEmpty()
             dao.putWinners(winnerRows(circuitId, winners))
             dao.putCircuitFact(CircuitFactEntity(circuitId, scheduledLaps(winners) ?: 0, System.currentTimeMillis()))
-        }.onFailure { error.value = it.message ?: "Couldn't reach Jolpica" }
+        }.onFailure { error.value = reason(it, "Couldn't reach Jolpica") }
     }
 
     /** Null when unknown, so the screen can leave the tile out instead of showing a wrong number. */

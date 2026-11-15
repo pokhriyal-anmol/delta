@@ -128,6 +128,7 @@ fun HomeScreen(repo: Repo, onDriver: (String) -> Unit, onStandings: () -> Unit,
                             }
                         }
                     }
+                    UpdateNote()
                     if (next != null && d != null) Column(Modifier.clickable { onWeekend() }
                         .padding(horizontal = F1Dim.screenPad).padding(top = 18.dp)) {
                         Text("Round ${next.round} · Next up", style = F1Type.meta.copy(color = p.sec))

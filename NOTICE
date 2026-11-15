@@ -10,9 +10,14 @@ What the licence does NOT give you
 - Formula 1's material. Driver photos and 2026 car images are loaded at run time from
   media.formula1.com and belong to Formula One Group and the teams. Team names, colours and any
   logos belong to their owners. Nothing from F1 is stored in this repository.
-- Data. Results come from Jolpica (api.jolpi.ca), circuit outlines from MultiViewer, headlines and
-  links from the news publishers named in the app, and posts from Reddit. Each is subject to its own
-  terms and none is relicensed here.
+- Data. Each source is subject to its own terms and none is relicensed here.
+  - Results, standings and calendars come from Jolpica-F1 (api.jolpi.ca), whose data is licensed under
+    Creative Commons Attribution-NonCommercial-ShareAlike 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
+    Delta reads it at run time, caches it on the phone and derives totals from it (podiums, poles, career
+    counts). Those derived figures are adaptations of that data and stay under the same licence.
+    Terms: https://github.com/jolpica/jolpica-f1/blob/main/TERMS.md
+  - Circuit outlines come from MultiViewer, headlines and links from the news publishers named in the
+    app, and posts from Reddit.
 
 This is an unofficial fan app. It is not affiliated with, endorsed by or connected to Formula 1,
 Formula One Group, the FIA, any team or any driver.

@@ -1,5 +1,7 @@
 package dev.anpo.f1.data
 
+import java.time.LocalDate
+
 /** One row per finisher. Race results arrive inside the season download the app already makes. */
 fun resultRows(race: JRace): List<RaceResultEntity> {
     val round = race.round.toIntOrNull() ?: return emptyList()
@@ -38,5 +40,29 @@ fun finishText(r: RaceResultEntity, leaderLaps: Int): String {
         r.time == null -> r.status
         r.laps > 0 && down > 0 -> "+$down ${if (down == 1) "Lap" else "Laps"}"
         else -> r.time
+    }
+}
+
+/** More missing rounds than this and the whole season is paged instead: 5 requests beat one per round. */
+internal const val BULK_FROM = 4
+
+/** Rounds whose race date is before today (UTC), so their results should exist. */
+internal fun finishedRounds(races: List<RaceEntity>, today: LocalDate): List<Int> =
+    races.filter { runCatching { LocalDate.parse(it.date) < today }.getOrDefault(false) }.map { it.round }
+
+/** Finished rounds with no stored results. A finished round never changes, so these are the only ones worth asking for. */
+internal fun missingRounds(finished: List<Int>, stored: Set<Int>): List<Int> = finished.filter { it !in stored }
+
+/** Podiums, poles, DNFs and points by round per driver, derived from stored rows (a numeric positionText is a classified finish). */
+internal fun seasonStats(rows: List<RaceResultEntity>, now: Long): List<DriverSeasonStat> {
+    val season = rows.firstOrNull()?.season ?: return emptyList()
+    val maxRound = rows.maxOf { it.round }
+    return rows.groupBy { it.driverId }.map { (id, mine) ->
+        val byRound = mine.associate { it.round to it.points.toInt() }
+        DriverSeasonStat(id, season,
+            podiums = mine.count { (it.positionText.toIntOrNull() ?: 99) <= 3 },
+            poles = mine.count { it.grid == 1 },
+            dnfs = mine.count { it.positionText.toIntOrNull() == null },
+            roundPoints = (1..maxRound).joinToString(",") { (byRound[it] ?: 0).toString() }, fetchedAt = now)
     }
 }

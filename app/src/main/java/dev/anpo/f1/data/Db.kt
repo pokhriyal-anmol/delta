@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.Flow
     @Query("SELECT * FROM driver_standing WHERE season = (SELECT MAX(season) FROM driver_standing) ORDER BY position") fun drivers(): Flow<List<DriverStandingEntity>>
     @Query("SELECT * FROM constructor_standing WHERE season = (SELECT MAX(season) FROM constructor_standing) ORDER BY position") fun teams(): Flow<List<ConstructorStandingEntity>>
     @Query("SELECT * FROM race WHERE season = (SELECT MAX(season) FROM race) ORDER BY round") fun races(): Flow<List<RaceEntity>>
+    @Query("SELECT * FROM race WHERE season = (SELECT MAX(season) FROM race) ORDER BY round") suspend fun racesNow(): List<RaceEntity>
+    @Query("SELECT DISTINCT round FROM race_result WHERE season = :s") suspend fun storedRounds(s: String): List<Int>
+    @Query("SELECT * FROM race_result WHERE season = :s") suspend fun resultsOf(s: String): List<RaceResultEntity>
     @Query("SELECT * FROM driver_standing WHERE driverId = :id ORDER BY season DESC LIMIT 1") suspend fun driver(id: String): DriverStandingEntity?
     @Query("SELECT * FROM driver_season_stat WHERE driverId = :id ORDER BY season DESC LIMIT 1") suspend fun driverStat(id: String): DriverSeasonStat?
     @Query("SELECT * FROM circuit_geometry WHERE circuitId = :id LIMIT 1") suspend fun circuit(id: String): CircuitGeometryEntity?

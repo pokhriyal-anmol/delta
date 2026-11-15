@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import retrofit2.Retrofit
@@ -12,6 +13,12 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+
+const val USER_AGENT = "Delta/${dev.anpo.f1.BuildConfig.VERSION_NAME} (+https://github.com/pokhriyal-anmol/delta)"
+
+/** Seconds from a Retry-After header, as milliseconds, capped so a bad value cannot stall a request. A date form or junk gives null. */
+fun retryAfterMs(header: String?, capMs: Long = 10_000L): Long? =
+    header?.trim()?.toLongOrNull()?.takeIf { it >= 0 }?.let { (it * 1000L).coerceAtMost(capMs) }
 
 interface JolpicaApi {
     @GET("ergast/f1/{season}/driverstandings/")
@@ -59,17 +66,28 @@ interface MultiViewerApi {
 object Net {
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
+    /** Jolpica requires a custom User-Agent, and a 429 means wait: honour Retry-After once, then let the error through. */
+    private val polite = Interceptor { chain ->
+        val request = chain.request().newBuilder().header("User-Agent", USER_AGENT).build()
+        var response = chain.proceed(request)
+        if (response.code == 429) retryAfterMs(response.header("Retry-After"))?.let { wait ->
+            response.close(); Thread.sleep(wait); response = chain.proceed(request)
+        }
+        response
+    }
+
     /** No logging interceptor in release - it would print URLs to logcat where any
      *  app with READ_LOGS could read them. Debug only, and even then keep it BASIC. */
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
+        .addInterceptor(polite)
         .build()
 
     /** One feed as text, refusing anything larger than MAX_FEED_BYTES. Cleartext is blocked app-wide, so a redirect to http fails. */
     suspend fun feed(url: String): String = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url(url).header("User-Agent", "Delta/1.2 (F1 reader)").build()
+        val request = Request.Builder().url(url).build()
         client.newCall(request).execute().use { r ->
             check(r.isSuccessful) { "HTTP ${r.code}" }
             val source = r.body!!.source()

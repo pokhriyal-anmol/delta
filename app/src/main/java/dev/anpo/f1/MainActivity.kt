@@ -48,6 +48,8 @@ private enum class Tab(val graph: String, val start: String, val label: String, 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Debug builds log any disk or network work on the main thread, the kind of slip that froze the News tab.
+        if (BuildConfig.DEBUG) android.os.StrictMode.setThreadPolicy(android.os.StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val repo = Repo(applicationContext)
