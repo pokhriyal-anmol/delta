@@ -51,15 +51,15 @@ Three short clips of the real app, each 22 to 26 seconds. They have a voiceover,
 
 **What if Schumacher were re-scored?**
 
-<video src="https://github.com/user-attachments/assets/905736e0-c8a0-4176-88eb-b1d641624fe7" controls></video>
+<video src="https://github.com/user-attachments/assets/1f8438ba-f349-4df0-8994-cc10d6353d24" controls></video>
 
 **1999. Who won?**
 
-<video src="https://github.com/user-attachments/assets/5240a7c5-c29b-4230-8dd1-dc33d41c4461" controls></video>
+<video src="https://github.com/user-attachments/assets/e47eebe6-0801-4812-89fb-360a95eda1b8" controls></video>
 
 **The whole app is 2.6 MB.**
 
-<video src="https://github.com/user-attachments/assets/4b0b2134-002b-414f-a412-6aa14321082a" controls></video>
+<video src="https://github.com/user-attachments/assets/9d08415c-739b-4bb0-8bae-52bab173d61c" controls></video>
 
 ## Why Delta
 
