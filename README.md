@@ -45,6 +45,22 @@ Delta follows the phone's theme. All 54 screenshots are in [`screenshots/`](scre
 
 </details>
 
+## Watch
+
+Three short clips of the real app, each 22 to 26 seconds. They have a voiceover, and the captions are burned in, so they also work with the sound off.
+
+**What if Schumacher were re-scored?**
+
+<video src="https://github.com/user-attachments/assets/905736e0-c8a0-4176-88eb-b1d641624fe7" controls></video>
+
+**1999. Who won?**
+
+<video src="https://github.com/user-attachments/assets/5240a7c5-c29b-4230-8dd1-dc33d41c4461" controls></video>
+
+**The whole app is 2.6 MB.**
+
+<video src="https://github.com/user-attachments/assets/4b0b2134-002b-414f-a412-6aa14321082a" controls></video>
+
 ## Why Delta
 
 - Nothing to sign in to, no ads and no tracking SDKs. Delta has no server of its own.
